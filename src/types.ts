@@ -47,3 +47,13 @@ export type PortfolioSummary = {
   realized_pnl: number;
   holdings: Holding[];
 };
+
+export type AllocationBy = 'ticker' | 'sector' | 'asset_class';
+
+export type AllocationSlice = { label: string; value: number; percent: number };
+
+export type HistoryPoint = { date: string; value: number; cost: number };
+
+export type PricePoint = { id: number; ticker: string; price: number; as_of: string; source: string };
+
+export type HoldingMeta = { name?: string | null; sector?: string | null; asset_class?: string | null };

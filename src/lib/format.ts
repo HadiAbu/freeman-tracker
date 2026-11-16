@@ -5,6 +5,29 @@ export const formatCurrency = (n: number) => usd.format(n);
 
 export const formatShares = (n: number) => shares.format(n);
 
+/** Compact money for axis ticks: $950, $1.2K, $4.5M. */
+export function formatCompactCurrency(n: number): string {
+  const abs = Math.abs(n);
+  const sign = n < 0 ? '-' : '';
+  if (abs >= 1e6) return `${sign}$${+(abs / 1e6).toFixed(1)}M`;
+  if (abs >= 1e3) return `${sign}$${+(abs / 1e3).toFixed(1)}K`;
+  return `${sign}$${Math.round(abs)}`;
+}
+
+/** 2026-11-16 -> Nov 16 (parsed as a local date, so no time-zone shift). */
+export function formatShortDate(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+/** Smallest 1/2/5 x 10^k step that is >= `raw`; keeps axis ticks round. */
+export function niceStep(raw: number): number {
+  if (!(raw > 0)) return 1;
+  const pow = Math.pow(10, Math.floor(Math.log10(raw)));
+  const f = raw / pow;
+  return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * pow;
+}
+
 /** Signed money, e.g. +$12.00 / -$3.50 */
 export const formatSignedCurrency = (n: number) => `${n > 0 ? '+' : n < 0 ? '-' : ''}${usd.format(Math.abs(n))}`;
 

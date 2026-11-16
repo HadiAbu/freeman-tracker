@@ -1,4 +1,14 @@
-import type { NewTrade, PortfolioSummary, Side, Trade } from '@/types';
+import type {
+  AllocationBy,
+  AllocationSlice,
+  HistoryPoint,
+  HoldingMeta,
+  NewTrade,
+  PortfolioSummary,
+  PricePoint,
+  Side,
+  Trade,
+} from '@/types';
 
 // EXPO_PUBLIC_* values are inlined into the JS bundle at build time, so the key is
 // readable by anyone who has the app. That is acceptable for a personal, single-user
@@ -64,4 +74,13 @@ export const api = {
     request<Trade>('/trades', { method: 'POST', body: JSON.stringify(trade) }),
   deleteTrade: (id: number) => request<void>(`/trades/${id}`, { method: 'DELETE' }),
   portfolioSummary: () => request<PortfolioSummary>('/portfolio/summary'),
+  allocation: (by: AllocationBy) => request<AllocationSlice[]>(`/portfolio/allocation?by=${by}`),
+  history: () => request<HistoryPoint[]>('/portfolio/history'),
+  priceHistory: (ticker: string) =>
+    request<PricePoint[]>(`/prices/${encodeURIComponent(ticker)}`),
+  putHolding: (ticker: string, meta: HoldingMeta) =>
+    request<unknown>(`/holdings/${encodeURIComponent(ticker)}`, {
+      method: 'PUT',
+      body: JSON.stringify(meta),
+    }),
 };
