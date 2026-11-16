@@ -3,11 +3,14 @@ import type {
   AllocationSlice,
   HistoryPoint,
   HoldingMeta,
+  NewPrice,
   NewTrade,
+  NewWatch,
   PortfolioSummary,
   PricePoint,
   Side,
   Trade,
+  WatchItem,
 } from '@/types';
 
 // EXPO_PUBLIC_* values are inlined into the JS bundle at build time, so the key is
@@ -78,6 +81,13 @@ export const api = {
   history: () => request<HistoryPoint[]>('/portfolio/history'),
   priceHistory: (ticker: string) =>
     request<PricePoint[]>(`/prices/${encodeURIComponent(ticker)}`),
+  listWatchlist: () => request<WatchItem[]>('/watchlist'),
+  // POST upserts by ticker, so adding an existing ticker updates its target and note.
+  addWatch: (item: NewWatch) =>
+    request<WatchItem>('/watchlist', { method: 'POST', body: JSON.stringify(item) }),
+  deleteWatch: (id: number) => request<void>(`/watchlist/${id}`, { method: 'DELETE' }),
+  addPrice: (p: NewPrice) =>
+    request<PricePoint>('/prices', { method: 'POST', body: JSON.stringify(p) }),
   putHolding: (ticker: string, meta: HoldingMeta) =>
     request<unknown>(`/holdings/${encodeURIComponent(ticker)}`, {
       method: 'PUT',
