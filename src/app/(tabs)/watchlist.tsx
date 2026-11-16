@@ -1,15 +1,16 @@
-import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import React from 'react';
-import { Alert, FlatList, StyleSheet, View } from 'react-native';
+import React, { useState } from 'react';
+import { FlatList, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
+import { ErrorBanner } from '@/components/error-banner';
 import { Screen } from '@/components/screen';
 import { EmptyState, ErrorState, LoadingState } from '@/components/screen-state';
 import { ThemedText } from '@/components/themed-text';
 import { WatchRow } from '@/components/watch-row';
 import { BottomTabInset, Spacing } from '@/constants/theme';
 import { useDeleteWatch, useWatchlist } from '@/hooks/use-watchlist';
+import { haptic } from '@/lib/haptics';
 import { confirmDestructive } from '@/lib/confirm';
 import type { WatchItem } from '@/types';
 
@@ -17,17 +18,19 @@ export default function WatchlistScreen() {
   const router = useRouter();
   const watchlist = useWatchlist();
   const remove = useDeleteWatch();
+  const [removeError, setRemoveError] = useState<string | null>(null);
 
   const onRemove = (item: WatchItem) =>
-    confirmDestructive('Remove from watchlist?', item.ticker, 'Remove', () =>
+    confirmDestructive('Remove from watchlist?', item.ticker, 'Remove', () => {
+      setRemoveError(null);
       remove.mutate(item.id, {
-        onSuccess: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
+        onSuccess: () => haptic('success'),
         onError: (e) => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-          Alert.alert('Could not remove', e.message);
+          haptic('error');
+          setRemoveError(e.message);
         },
-      }),
-    );
+      });
+    });
 
   return (
     <Screen>
@@ -35,6 +38,12 @@ export default function WatchlistScreen() {
         <ThemedText type="subtitle">Watchlist</ThemedText>
         <Button title="Add ticker" onPress={() => router.push('/add-watch')} />
       </View>
+
+      {removeError ? (
+        <View style={styles.banner}>
+          <ErrorBanner message={removeError} onDismiss={() => setRemoveError(null)} />
+        </View>
+      ) : null}
 
       {watchlist.isPending ? (
         <LoadingState />
@@ -81,6 +90,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: Spacing.three,
   },
+  banner: { paddingBottom: Spacing.three },
   list: { flexGrow: 1, paddingBottom: BottomTabInset + Spacing.four },
   separator: { height: Spacing.two },
   hint: { textAlign: 'center', paddingTop: Spacing.three },

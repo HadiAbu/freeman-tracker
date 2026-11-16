@@ -23,14 +23,34 @@ const Y_LABEL_WIDTH = 52;
 const INITIAL_SPACING = 12;
 const END_SPACING = 20;
 const HEIGHT = 160;
+const MAX_POINTS = 60;
+
+/** Indices of at most `max` evenly spread points out of `n`, including the first and last. */
+function sampleIndices(n: number, max: number): number[] {
+  if (n <= max) return Array.from({ length: n }, (_, i) => i);
+  const out = new Set<number>();
+  for (let i = 0; i < max; i++) out.add(Math.round((i * (n - 1)) / (max - 1)));
+  return [...out].sort((a, b) => a - b);
+}
 
 /**
  * Single-axis line chart: 2px line, ~10% area wash, one 8px end dot with a surface ring,
  * solid hairline grid, selective x labels (first and last), tooltip on touch.
  */
-export function TrendLine({ points, primaryName, secondary, secondaryName, emptyHint }: Props) {
+export function TrendLine({
+  points: allPoints,
+  primaryName,
+  secondary: allSecondary,
+  secondaryName,
+  emptyHint,
+}: Props) {
   const c = useChartTheme();
   const width = useChartWidth();
+  // A phone cannot show more than a few dozen distinct points, and the library gives each
+  // x label only one point's width. Thin long histories evenly (always keeping first and last).
+  const picked = sampleIndices(allPoints.length, MAX_POINTS);
+  const points = picked.map((i) => allPoints[i]);
+  const secondary = allSecondary ? picked.map((i) => allSecondary[i]) : undefined;
   const n = points.length;
 
   if (n < 2) {
@@ -53,7 +73,6 @@ export function TrendLine({ points, primaryName, secondary, secondaryName, empty
   const primary = points.map((p, i) => ({
     value: p.value,
     date: p.date,
-    label: i === 0 || i === n - 1 ? formatShortDate(p.date) : '',
     // only the last point gets a marker (the custom end dot below)
     hideDataPoint: i !== n - 1,
   }));
@@ -130,6 +149,11 @@ export function TrendLine({ points, primaryName, secondary, secondaryName, empty
         }}
       />
 
+      <View style={styles.dates}>
+        <Text style={[styles.dateText, { color: c.muted }]}>{formatShortDate(points[0].date)}</Text>
+        <Text style={[styles.dateText, { color: c.muted }]}>{formatShortDate(points[n - 1].date)}</Text>
+      </View>
+
       {secondary ? (
         <View style={styles.legend}>
           <LegendKey color={c.primary} label={primaryName} ink={c.inkSecondary} />
@@ -154,6 +178,13 @@ const styles = StyleSheet.create({
   tip: { padding: Spacing.two, borderRadius: Spacing.two, borderWidth: StyleSheet.hairlineWidth, gap: 2 },
   tipDate: { fontSize: 11 },
   tipValue: { fontSize: 12, fontWeight: '600' },
+  dates: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingLeft: Y_LABEL_WIDTH + INITIAL_SPACING - 6,
+    paddingRight: END_SPACING,
+  },
+  dateText: { fontSize: 11 },
   legend: { flexDirection: 'row', gap: Spacing.three, paddingTop: Spacing.three, paddingLeft: Y_LABEL_WIDTH },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   legendLine: { width: 16, height: 2, borderRadius: 1 },

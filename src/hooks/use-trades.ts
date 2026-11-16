@@ -1,16 +1,46 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { api } from '@/lib/api';
 import type { NewTrade, Side } from '@/types';
 
+// Every trades query lives under ['trades'], so one invalidation refreshes all of them.
 export const tradeKeys = {
   all: ['trades'] as const,
-  list: (side?: Side) => ['trades', { side: side ?? 'all' }] as const,
+  recent: (limit: number) => ['trades', 'recent', limit] as const,
+  paged: (side?: Side) => ['trades', 'paged', side ?? 'all'] as const,
+  ticker: (ticker: string) => ['trades', 'ticker', ticker] as const,
 };
 export const portfolioKey = ['portfolio'] as const;
 
-export function useTrades(side?: Side) {
-  return useQuery({ queryKey: tradeKeys.list(side), queryFn: () => api.listTrades({ side }) });
+export const TRADES_PAGE_SIZE = 100;
+
+/** The newest `limit` trades (dashboard). */
+export function useRecentTrades(limit = 5) {
+  return useQuery({
+    queryKey: tradeKeys.recent(limit),
+    queryFn: () => api.listTrades({ limit }),
+  });
+}
+
+/** Full trade history, newest first, loaded a page at a time (Trades tab). */
+export function useTradePages(side?: Side) {
+  return useInfiniteQuery({
+    queryKey: tradeKeys.paged(side),
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) =>
+      api.listTrades({ side, limit: TRADES_PAGE_SIZE, offset: pageParam }),
+    // A short page means there is nothing more to load.
+    getNextPageParam: (last, all) =>
+      last.length < TRADES_PAGE_SIZE ? undefined : all.length * TRADES_PAGE_SIZE,
+  });
+}
+
+/** Every trade for one ticker (position screen): filtered by the server, not the client. */
+export function useTickerTrades(ticker: string) {
+  return useQuery({
+    queryKey: tradeKeys.ticker(ticker),
+    queryFn: () => api.listTrades({ ticker, limit: 1000 }),
+  });
 }
 
 export function usePortfolioSummary() {

@@ -41,7 +41,7 @@ export default function PortfolioScreen() {
 
         <ChartCard
           title="Unrealized gain / loss"
-          subtitle={holdings.length > 10 ? 'Ten largest moves' : 'By holding, versus cost'}
+          subtitle="By holding, versus cost"
           summary={chartSummary}>
           <PnLBars holdings={holdings} />
         </ChartCard>

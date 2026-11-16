@@ -1,5 +1,4 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
@@ -13,7 +12,8 @@ import { ThemedView } from '@/components/themed-view';
 import { TradeRow } from '@/components/trade-row';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { usePriceHistory, useSaveHoldingMeta } from '@/hooks/use-portfolio';
-import { usePortfolioSummary, useTrades } from '@/hooks/use-trades';
+import { usePortfolioSummary, useTickerTrades } from '@/hooks/use-trades';
+import { haptic } from '@/lib/haptics';
 import { formatCurrency, formatPercent, formatShares, formatSignedCurrency } from '@/lib/format';
 import type { Holding } from '@/types';
 
@@ -36,7 +36,7 @@ export default function HoldingScreen() {
   const router = useRouter();
 
   const summary = usePortfolioSummary();
-  const trades = useTrades();
+  const trades = useTickerTrades(ticker);
   const prices = usePriceHistory(ticker);
 
   if (summary.isPending || trades.isPending) return <ThemedView style={styles.root}><LoadingState /></ThemedView>;
@@ -50,7 +50,8 @@ export default function HoldingScreen() {
   }
 
   const holding = summary.data.holdings.find((h) => h.ticker === ticker);
-  const mine = trades.data.filter((t) => t.ticker === ticker);
+  // already filtered by ticker on the server
+  const mine = trades.data;
 
   // Price over time: what you paid at each trade plus any manual price marks.
   const points = [
@@ -137,8 +138,8 @@ function Classification({ holding: h }: { holding: Holding }) {
         asset_class: assetClass.trim() || null,
       },
       {
-        onSuccess: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
-        onError: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error),
+        onSuccess: () => haptic('success'),
+        onError: () => haptic('error'),
       },
     );
 

@@ -66,10 +66,13 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
-  listTrades: (opts: { side?: Side; ticker?: string } = {}) => {
+  // Newest first. A page shorter than `limit` is the last one.
+  listTrades: (opts: { side?: Side; ticker?: string; limit?: number; offset?: number } = {}) => {
     const q = new URLSearchParams();
     if (opts.side) q.set('side', opts.side);
     if (opts.ticker) q.set('ticker', opts.ticker);
+    if (opts.limit !== undefined) q.set('limit', String(opts.limit));
+    if (opts.offset !== undefined) q.set('offset', String(opts.offset));
     const qs = q.toString();
     return request<Trade[]>(`/trades${qs ? `?${qs}` : ''}`);
   },
