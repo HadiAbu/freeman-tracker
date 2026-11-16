@@ -7,6 +7,7 @@ import { AllocationDonut } from '@/components/charts/allocation-donut';
 import { ChartCard, ChartNote } from '@/components/charts/chart-card';
 import { TrendLine } from '@/components/charts/trend-line';
 import { ChipRow } from '@/components/chip-row';
+import { ErrorBanner } from '@/components/error-banner';
 import { Screen } from '@/components/screen';
 import { ErrorState, LoadingState } from '@/components/screen-state';
 import { ThemedText } from '@/components/themed-text';
@@ -15,8 +16,8 @@ import { TradeRow } from '@/components/trade-row';
 import { useChartTheme } from '@/constants/chart-theme';
 import { BottomTabInset, Spacing } from '@/constants/theme';
 import { useAllocation, usePortfolioHistory } from '@/hooks/use-portfolio';
-import { usePortfolioSummary, useTrades } from '@/hooks/use-trades';
-import { buildSlices, labelSlots, tickerOrder } from '@/lib/entity-colors';
+import { usePortfolioSummary, useRecentTrades } from '@/hooks/use-trades';
+import { buildSlices } from '@/lib/entity-colors';
 import { formatCurrency, formatPercent, formatSignedCurrency } from '@/lib/format';
 import type { AllocationBy } from '@/types';
 
@@ -32,7 +33,7 @@ export default function DashboardScreen() {
   const [by, setBy] = useState<AllocationBy>('ticker');
 
   const summary = usePortfolioSummary();
-  const trades = useTrades();
+  const trades = useRecentTrades(5);
   const history = usePortfolioHistory();
   const allocation = useAllocation(by);
 
@@ -48,17 +49,11 @@ export default function DashboardScreen() {
 
   const s = summary.data;
   const pnlColor = s.unrealized_pnl > 0 ? 'gain' : s.unrealized_pnl < 0 ? 'loss' : 'textSecondary';
-  const recent = trades.data?.slice(0, 5) ?? [];
-
-  const slices =
-    allocation.data && trades.data
-      ? buildSlices(
-          allocation.data,
-          labelSlots(by, s.holdings, tickerOrder(trades.data)),
-          chart.categorical,
-          chart.other,
-        )
-      : [];
+  // Slot (identity) comes from the server, so colors depend only on the slice, never on the
+  // selected dimension or on how many trades happen to be loaded.
+  const slices = allocation.data
+    ? buildSlices(allocation.data, chart.categorical, chart.other)
+    : [];
 
   return (
     <Screen>
@@ -111,9 +106,10 @@ export default function DashboardScreen() {
           {allocation.isError ? (
             <ChartNote>{allocation.error.message}</ChartNote>
           ) : slices.length === 0 ? (
-            allocation.isPending || trades.isPending ? <LoadingState /> : <ChartNote>No open positions to show yet.</ChartNote>
+            allocation.isPending ? <LoadingState /> : <ChartNote>No open positions to show yet.</ChartNote>
           ) : (
-            <AllocationDonut slices={slices} total={s.total_value} />
+            // key resets the focused slice when the dimension changes
+            <AllocationDonut key={by} slices={slices} total={s.total_value} />
           )}
         </ChartCard>
 
@@ -122,10 +118,15 @@ export default function DashboardScreen() {
           <Button title="Add trade" onPress={() => router.push('/add-trade')} />
         </View>
 
-        {recent.length === 0 ? (
+        {trades.isError ? (
+          // a failed request must not read as "no trades"
+          <ErrorBanner message={trades.error.message} onDismiss={() => trades.refetch()} actionLabel="Retry" />
+        ) : trades.isPending ? (
+          <LoadingState />
+        ) : trades.data.length === 0 ? (
           <ThemedText themeColor="textSecondary">No trades yet. Add your first buy to see your portfolio here.</ThemedText>
         ) : (
-          recent.map((t) => <TradeRow key={t.id} trade={t} />)
+          trades.data.map((t) => <TradeRow key={t.id} trade={t} />)
         )}
       </ScrollView>
     </Screen>

@@ -13,7 +13,7 @@ import { ThemedView } from '@/components/themed-view';
 import { TradeRow } from '@/components/trade-row';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { usePriceHistory, useSaveHoldingMeta } from '@/hooks/use-portfolio';
-import { usePortfolioSummary, useTrades } from '@/hooks/use-trades';
+import { usePortfolioSummary, useTickerTrades } from '@/hooks/use-trades';
 import { formatCurrency, formatPercent, formatShares, formatSignedCurrency } from '@/lib/format';
 import type { Holding } from '@/types';
 
@@ -36,7 +36,7 @@ export default function HoldingScreen() {
   const router = useRouter();
 
   const summary = usePortfolioSummary();
-  const trades = useTrades();
+  const trades = useTickerTrades(ticker);
   const prices = usePriceHistory(ticker);
 
   if (summary.isPending || trades.isPending) return <ThemedView style={styles.root}><LoadingState /></ThemedView>;
@@ -50,7 +50,8 @@ export default function HoldingScreen() {
   }
 
   const holding = summary.data.holdings.find((h) => h.ticker === ticker);
-  const mine = trades.data.filter((t) => t.ticker === ticker);
+  // already filtered by ticker on the server
+  const mine = trades.data;
 
   // Price over time: what you paid at each trade plus any manual price marks.
   const points = [

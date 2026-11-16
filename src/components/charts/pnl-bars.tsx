@@ -1,4 +1,5 @@
 import React from 'react';
+import { View } from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
 
 import { ChartNote } from '@/components/charts/chart-card';
@@ -10,6 +11,7 @@ import type { Holding } from '@/types';
 const Y_LABEL_WIDTH = 52;
 const MAX_BARS = 10;
 const BAR_WIDTH = 24; // marks stay thin: never fill the slot
+const MIN_GAP = 12; // a bar plus its gap needs 36px; ticker labels are ~28px wide
 const HEIGHT = 160;
 
 /**
@@ -23,9 +25,14 @@ export function PnLBars({ holdings }: { holdings: Holding[] }) {
 
   if (holdings.length === 0) return <ChartNote>No open positions yet.</ChartNote>;
 
+  // BarChart's `width` also covers the y-axis labels, unlike LineChart's, so budget for both.
+  const plotWidth = width - Y_LABEL_WIDTH - 24;
+  // Show only as many bars as fit at full size; scrolling is off, so extra bars would be
+  // clipped and unreachable. The holdings list below carries every value.
+  const maxBars = Math.max(3, Math.min(MAX_BARS, Math.floor((plotWidth - 24) / (BAR_WIDTH + MIN_GAP))));
   const shown = [...holdings]
     .sort((a, b) => Math.abs(b.unrealized_pnl) - Math.abs(a.unrealized_pnl))
-    .slice(0, MAX_BARS)
+    .slice(0, maxBars)
     .sort((a, b) => b.unrealized_pnl - a.unrealized_pnl);
 
   const maxPos = Math.max(0, ...shown.map((h) => h.unrealized_pnl));
@@ -36,9 +43,8 @@ export function PnLBars({ holdings }: { holdings: Holding[] }) {
   const posSections = Math.max(1, Math.ceil(maxPos / step));
   const negSections = Math.ceil(maxNeg / step);
 
-  // BarChart's `width` also covers the y-axis labels, unlike LineChart's, so budget for both.
-  const plotWidth = width - Y_LABEL_WIDTH - 24;
-  const spacing = Math.max(12, Math.min(48, (plotWidth - 24) / shown.length - BAR_WIDTH));
+  const spacing = Math.max(MIN_GAP, Math.min(48, (plotWidth - 24) / shown.length - BAR_WIDTH));
+  const truncated = holdings.length > shown.length;
 
   const data = shown.map((h) => {
     const gain = h.unrealized_pnl >= 0;
@@ -55,6 +61,7 @@ export function PnLBars({ holdings }: { holdings: Holding[] }) {
   });
 
   return (
+    <View>
     <BarChart
       data={data}
       width={plotWidth}
@@ -86,5 +93,9 @@ export function PnLBars({ holdings }: { holdings: Holding[] }) {
       xAxisLabelsAtBottom
       xAxisLabelTextStyle={{ color: c.inkSecondary, fontSize: 11, textAlign: 'center' }}
     />
+      {truncated ? (
+        <ChartNote>{`Showing the ${shown.length} largest moves. Every holding is listed below.`}</ChartNote>
+      ) : null}
+    </View>
   );
 }

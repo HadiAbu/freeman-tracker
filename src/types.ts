@@ -50,7 +50,8 @@ export type PortfolioSummary = {
 
 export type AllocationBy = 'ticker' | 'sector' | 'asset_class';
 
-export type AllocationSlice = { label: string; value: number; percent: number };
+/** `slot` is a stable identity index for the label (from the server), mapped to a palette color. */
+export type AllocationSlice = { label: string; value: number; percent: number; slot: number };
 
 export type HistoryPoint = { date: string; value: number; cost: number };
 
