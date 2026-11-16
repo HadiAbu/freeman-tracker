@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -33,6 +33,7 @@ function Stat({ label, value, color }: { label: string; value: string; color?: '
 export default function HoldingScreen() {
   const { ticker: raw } = useLocalSearchParams<{ ticker: string }>();
   const ticker = String(raw ?? '').toUpperCase();
+  const router = useRouter();
 
   const summary = usePortfolioSummary();
   const trades = useTrades();
@@ -66,6 +67,12 @@ export default function HoldingScreen() {
             {mine.length > 0 ? 'This position is closed.' : `No trades found for ${ticker}.`}
           </ThemedText>
         )}
+
+        <Button
+          title="Log price"
+          variant="secondary"
+          onPress={() => router.push({ pathname: '/log-price', params: { ticker } })}
+        />
 
         <ChartCard title="Price" subtitle="Your trade prices and any price marks you have logged">
           <TrendLine

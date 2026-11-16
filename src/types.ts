@@ -57,3 +57,24 @@ export type HistoryPoint = { date: string; value: number; cost: number };
 export type PricePoint = { id: number; ticker: string; price: number; as_of: string; source: string };
 
 export type HoldingMeta = { name?: string | null; sector?: string | null; asset_class?: string | null };
+
+export type WatchItem = {
+  id: number;
+  ticker: string;
+  name: string | null;
+  target_price: number | null;
+  note: string | null;
+  /** Latest logged price mark, if any. */
+  price: number | null;
+  /** (target - price) / price * 100; null without both a target and a price. */
+  pct_to_target: number | null;
+};
+
+export type NewWatch = {
+  ticker: string;
+  name?: string | null;
+  target_price?: number | null;
+  note?: string | null;
+};
+
+export type NewPrice = { ticker: string; price: number; as_of: string };

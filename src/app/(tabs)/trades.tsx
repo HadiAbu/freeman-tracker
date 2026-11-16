@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import React, { useState } from 'react';
-import { Alert, FlatList, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, FlatList, Pressable, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { Screen } from '@/components/screen';
@@ -11,6 +11,7 @@ import { ThemedView } from '@/components/themed-view';
 import { TradeRow } from '@/components/trade-row';
 import { BottomTabInset, Spacing } from '@/constants/theme';
 import { useDeleteTrade, useTrades } from '@/hooks/use-trades';
+import { confirmDestructive } from '@/lib/confirm';
 import type { Side, Trade } from '@/types';
 
 const FILTERS: { label: string; value: Side | undefined }[] = [
@@ -21,14 +22,7 @@ const FILTERS: { label: string; value: Side | undefined }[] = [
 
 function confirmDelete(trade: Trade, onConfirm: () => void) {
   const message = `${trade.side.toUpperCase()} ${trade.shares} ${trade.ticker} on ${trade.traded_at}`;
-  if (Platform.OS === 'web') {
-    if (window.confirm(`Delete trade?\n${message}`)) onConfirm();
-    return;
-  }
-  Alert.alert('Delete trade?', message, [
-    { text: 'Cancel', style: 'cancel' },
-    { text: 'Delete', style: 'destructive', onPress: onConfirm },
-  ]);
+  confirmDestructive('Delete trade?', message, 'Delete', onConfirm);
 }
 
 export default function TradesScreen() {
