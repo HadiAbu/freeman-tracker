@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
@@ -11,6 +10,7 @@ import { ThemedText } from '@/components/themed-text';
 import { WatchRow } from '@/components/watch-row';
 import { BottomTabInset, Spacing } from '@/constants/theme';
 import { useDeleteWatch, useWatchlist } from '@/hooks/use-watchlist';
+import { haptic } from '@/lib/haptics';
 import { confirmDestructive } from '@/lib/confirm';
 import type { WatchItem } from '@/types';
 
@@ -24,9 +24,9 @@ export default function WatchlistScreen() {
     confirmDestructive('Remove from watchlist?', item.ticker, 'Remove', () => {
       setRemoveError(null);
       remove.mutate(item.id, {
-        onSuccess: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
+        onSuccess: () => haptic('success'),
         onError: (e) => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          haptic('error');
           setRemoveError(e.message);
         },
       });

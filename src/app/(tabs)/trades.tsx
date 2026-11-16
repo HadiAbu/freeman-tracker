@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
@@ -12,6 +11,7 @@ import { ThemedView } from '@/components/themed-view';
 import { TradeRow } from '@/components/trade-row';
 import { BottomTabInset, Spacing } from '@/constants/theme';
 import { useDeleteTrade, useTradePages } from '@/hooks/use-trades';
+import { haptic } from '@/lib/haptics';
 import { confirmDestructive } from '@/lib/confirm';
 import type { Side, Trade } from '@/types';
 
@@ -39,9 +39,9 @@ export default function TradesScreen() {
     confirmDelete(trade, () => {
       setDeleteError(null);
       remove.mutate(trade.id, {
-        onSuccess: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
+        onSuccess: () => haptic('success'),
         onError: (e) => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          haptic('error');
           // e.g. 409: deleting a buy that a later sell depends on
           setDeleteError(e.message);
         },

@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
@@ -9,6 +8,7 @@ import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useCreateTrade } from '@/hooks/use-trades';
 import { useTheme } from '@/hooks/use-theme';
+import { haptic } from '@/lib/haptics';
 import { isISODate, todayISO } from '@/lib/format';
 import type { Side } from '@/types';
 
@@ -47,7 +47,7 @@ export default function AddTradeScreen() {
     const e = validate();
     setErrors(e);
     if (Object.keys(e).length > 0) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      haptic('warning');
       return;
     }
     create.mutate(
@@ -62,10 +62,10 @@ export default function AddTradeScreen() {
       },
       {
         onSuccess: () => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          haptic('success');
           close();
         },
-        onError: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error),
+        onError: () => haptic('error'),
       },
     );
   }

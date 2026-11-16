@@ -50,6 +50,19 @@ npx expo-doctor
 server once (`npx expo start`), then run `tsc`. Lint also reports one known error in the template's
 `src/hooks/use-color-scheme.web.ts`.
 
+## Troubleshooting
+
+**"The method or property X is not available on android" (an `UnavailabilityError`).** Nothing needs
+linking by hand: Expo autolinks native modules, and Expo Go ships its own copy of them. This error
+means the native module inside the app on your phone is out of step with the JS package in
+`node_modules` (Expo sometimes changes a native module in a patch release). Update Expo Go from the
+store first. If it persists, build a development client, which compiles the exact native versions this
+project uses: `eas build --profile development --platform android`.
+
+Haptics go through `src/lib/haptics.ts`, which never throws, so a missing haptics module only means no
+vibration, not a crash. Use that helper for any new haptic feedback instead of calling `expo-haptics`
+directly.
+
 ## Builds (EAS)
 
 `eas.json` defines three profiles, each tied to an EAS environment of the same name:

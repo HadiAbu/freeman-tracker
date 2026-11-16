@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
@@ -9,6 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAddWatch } from '@/hooks/use-watchlist';
+import { haptic } from '@/lib/haptics';
 
 type Errors = Partial<Record<'ticker' | 'target', string>>;
 
@@ -31,7 +31,7 @@ export default function AddWatchScreen() {
     if (target.trim() !== '' && !(num(target) >= 0)) e.target = 'Target must be 0 or more';
     setErrors(e);
     if (Object.keys(e).length > 0) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      haptic('warning');
       return;
     }
     add.mutate(
@@ -43,10 +43,10 @@ export default function AddWatchScreen() {
       },
       {
         onSuccess: () => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          haptic('success');
           close();
         },
-        onError: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error),
+        onError: () => haptic('error'),
       },
     );
   }

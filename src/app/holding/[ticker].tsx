@@ -1,5 +1,4 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
@@ -14,6 +13,7 @@ import { TradeRow } from '@/components/trade-row';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { usePriceHistory, useSaveHoldingMeta } from '@/hooks/use-portfolio';
 import { usePortfolioSummary, useTickerTrades } from '@/hooks/use-trades';
+import { haptic } from '@/lib/haptics';
 import { formatCurrency, formatPercent, formatShares, formatSignedCurrency } from '@/lib/format';
 import type { Holding } from '@/types';
 
@@ -138,8 +138,8 @@ function Classification({ holding: h }: { holding: Holding }) {
         asset_class: assetClass.trim() || null,
       },
       {
-        onSuccess: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
-        onError: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error),
+        onSuccess: () => haptic('success'),
+        onError: () => haptic('error'),
       },
     );
 

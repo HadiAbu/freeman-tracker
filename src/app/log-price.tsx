@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
@@ -9,6 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAddPrice } from '@/hooks/use-watchlist';
+import { haptic } from '@/lib/haptics';
 import { isISODate, todayISO } from '@/lib/format';
 
 type Errors = Partial<Record<'ticker' | 'price' | 'date', string>>;
@@ -34,17 +34,17 @@ export default function LogPriceScreen() {
     if (!isISODate(date.trim())) e.date = 'Use the format YYYY-MM-DD';
     setErrors(e);
     if (Object.keys(e).length > 0) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      haptic('warning');
       return;
     }
     addPrice.mutate(
       { ticker: ticker.trim().toUpperCase(), price: num(price), as_of: date.trim() },
       {
         onSuccess: () => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          haptic('success');
           close();
         },
-        onError: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error),
+        onError: () => haptic('error'),
       },
     );
   }
