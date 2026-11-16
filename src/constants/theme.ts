@@ -14,6 +14,9 @@ export const Colors = {
     backgroundElement: '#F0F0F3',
     backgroundSelected: '#E0E1E6',
     textSecondary: '#60646C',
+    gain: '#16A34A',
+    loss: '#DC2626',
+    border: '#D0D1D6',
   },
   dark: {
     text: '#ffffff',
@@ -21,6 +24,9 @@ export const Colors = {
     backgroundElement: '#212225',
     backgroundSelected: '#2E3135',
     textSecondary: '#B0B4BA',
+    gain: '#4ADE80',
+    loss: '#F87171',
+    border: '#3A3D42',
   },
 } as const;
 
@@ -61,5 +67,7 @@ export const Spacing = {
   six: 64,
 } as const;
 
+/** On web the tab bar floats over the top of the screen; content must clear it. */
+export const TopTabInset = Platform.select({ web: 88 }) ?? 0;
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;

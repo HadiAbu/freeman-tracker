@@ -1,0 +1,49 @@
+// Shapes returned by freeman-api (see freeman-api/app/main.py).
+
+export type Side = 'buy' | 'sell';
+
+export type Trade = {
+  id: number;
+  ticker: string;
+  side: Side;
+  shares: number;
+  price: number;
+  fee: number;
+  traded_at: string; // YYYY-MM-DD
+  note: string | null;
+};
+
+export type NewTrade = {
+  ticker: string;
+  side: Side;
+  shares: number;
+  price: number;
+  fee: number;
+  traded_at: string;
+  note?: string | null;
+};
+
+export type Holding = {
+  ticker: string;
+  shares: number;
+  avg_cost: number;
+  cost_basis: number;
+  price: number;
+  price_source: 'price' | 'trade';
+  market_value: number;
+  unrealized_pnl: number;
+  unrealized_pct: number;
+  realized_pnl: number;
+  name: string | null;
+  sector: string | null;
+  asset_class: string | null;
+};
+
+export type PortfolioSummary = {
+  total_value: number;
+  total_cost: number;
+  unrealized_pnl: number;
+  unrealized_pct: number;
+  realized_pnl: number;
+  holdings: Holding[];
+};
