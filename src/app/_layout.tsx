@@ -18,6 +18,7 @@ export default function RootLayout() {
         <AnimatedSplashOverlay />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="holding/[ticker]" options={{ headerShown: true, title: 'Position' }} />
           <Stack.Screen
             name="add-trade"
             options={{ presentation: 'modal', headerShown: true, title: 'Add trade' }}
