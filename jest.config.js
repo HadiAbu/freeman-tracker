@@ -5,7 +5,7 @@ process.env.EXPO_PUBLIC_API_KEY = 'test-key';
 module.exports = {
   preset: 'jest-expo',
   moduleNameMapper: {
-    '\.css$': '<rootDir>/test/empty-module.js',
+    '\\.css$':'<rootDir>/test/empty-module.js',
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   transformIgnorePatterns: [
