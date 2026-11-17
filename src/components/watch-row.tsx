@@ -11,6 +11,7 @@ type Props = {
   item: WatchItem;
   onPress: (item: WatchItem) => void;
   onLongPress: (item: WatchItem) => void;
+  onResearch?: (item: WatchItem) => void;
 };
 
 /** What the target means right now, in words as well as color. */
@@ -22,7 +23,7 @@ function targetStatus(item: WatchItem): { text: string; color?: 'gain' } {
   return { text: `Target ${formatCurrency(target)} · ${formatPercent(pct ?? 0)} to go` };
 }
 
-export function WatchRow({ item, onPress, onLongPress }: Props) {
+export function WatchRow({ item, onPress, onLongPress, onResearch }: Props) {
   const status = targetStatus(item);
   return (
     <Pressable
@@ -46,6 +47,15 @@ export function WatchRow({ item, onPress, onLongPress }: Props) {
             <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
               {item.note}
             </ThemedText>
+          ) : null}
+          {onResearch ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Research ${item.ticker} with news`}
+              hitSlop={8}
+              onPress={() => onResearch(item)}>
+              <ThemedText type="link">Research with news</ThemedText>
+            </Pressable>
           ) : null}
         </View>
         <View style={styles.right}>

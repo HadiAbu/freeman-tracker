@@ -4,6 +4,7 @@ import { FlatList, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { ErrorBanner } from '@/components/error-banner';
+import { ResearchBox } from '@/components/research-box';
 import { Screen } from '@/components/screen';
 import { EmptyState, ErrorState, LoadingState } from '@/components/screen-state';
 import { ThemedText } from '@/components/themed-text';
@@ -39,6 +40,12 @@ export default function WatchlistScreen() {
         <Button title="Add ticker" onPress={() => router.push('/add-watch')} />
       </View>
 
+      <View style={styles.researchBox}>
+        <ResearchBox
+          onSubmit={(t) => router.push({ pathname: '/analysis/[ticker]', params: { ticker: t } })}
+        />
+      </View>
+
       {removeError ? (
         <View style={styles.banner}>
           <ErrorBanner message={removeError} onDismiss={() => setRemoveError(null)} />
@@ -58,6 +65,7 @@ export default function WatchlistScreen() {
               item={item}
               onPress={(w) => router.push({ pathname: '/log-price', params: { ticker: w.ticker } })}
               onLongPress={onRemove}
+              onResearch={(w) => router.push({ pathname: '/analysis/[ticker]', params: { ticker: w.ticker } })}
             />
           )}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
@@ -90,6 +98,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: Spacing.three,
   },
+  researchBox: { paddingBottom: Spacing.three },
   banner: { paddingBottom: Spacing.three },
   list: { flexGrow: 1, paddingBottom: BottomTabInset + Spacing.four },
   separator: { height: Spacing.two },
