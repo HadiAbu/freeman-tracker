@@ -16,6 +16,7 @@ export default function RootLayout() {
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="holding/[ticker]" options={{ headerShown: true, title: 'Position' }} />
+          <Stack.Screen name="analysis/[ticker]" options={{ headerShown: true, title: 'News analysis' }} />
           <Stack.Screen
             name="add-watch"
             options={{ presentation: 'modal', headerShown: true, title: 'Add to watchlist' }}
