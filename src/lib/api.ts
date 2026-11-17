@@ -47,32 +47,44 @@ async function request<T>(path: string, init: RequestInit = {}, timeoutMs = 15_0
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
-  let res: Response;
+  const isAbort = (e: unknown) => (e as { name?: string })?.name === 'AbortError';
+  const tooLong = () => new ApiError(0, 'The request took too long. Please try again.');
+
+  // The timer stays armed until the body has been read, so a server that sends headers and
+  // then stalls cannot hang the caller forever.
   try {
-    res = await fetch(`${BASE_URL}${path}`, {
-      ...init,
-      signal: controller.signal,
-      headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY, ...init.headers },
-    });
-  } catch (e) {
-    if ((e as { name?: string })?.name === 'AbortError') {
-      throw new ApiError(0, 'The request took too long. Please try again.');
+    let res: Response;
+    try {
+      res = await fetch(`${BASE_URL}${path}`, {
+        ...init,
+        signal: controller.signal,
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY, ...init.headers },
+      });
+    } catch (e) {
+      if (isAbort(e)) throw tooLong();
+      throw new ApiError(0, `Could not reach the server at ${BASE_URL}.`);
     }
-    throw new ApiError(0, `Could not reach the server at ${BASE_URL}.`);
+
+    if (!res.ok) {
+      let message = `Request failed (${res.status})`;
+      try {
+        message = detailToMessage((await res.json()).detail) ?? message;
+      } catch (e) {
+        if (isAbort(e)) throw tooLong();
+        // non-JSON error body; keep the generic message
+      }
+      throw new ApiError(res.status, message);
+    }
+    if (res.status === 204) return undefined as T;
+    try {
+      return (await res.json()) as T;
+    } catch (e) {
+      if (isAbort(e)) throw tooLong();
+      throw e;
+    }
   } finally {
     clearTimeout(timer);
   }
-
-  if (!res.ok) {
-    let message = `Request failed (${res.status})`;
-    try {
-      message = detailToMessage((await res.json()).detail) ?? message;
-    } catch {
-      // non-JSON error body; keep the generic message
-    }
-    throw new ApiError(res.status, message);
-  }
-  return res.status === 204 ? (undefined as T) : ((await res.json()) as T);
 }
 
 export const api = {
