@@ -67,7 +67,7 @@ Finnhub or GDELT. It talks to freeman-api with the existing `X-API-Key`.
 - Returns the cached analysis if one exists for (ticker, position hash, personalized) and is younger
   than the cache window; otherwise runs the pipeline. `refresh: true` bypasses the cache but respects
   the minimum refresh interval.
-- 200 `Analysis` (section 6). 400 invalid ticker. 429 daily cap or refresh too soon (with `retry_after`
+- 200 `Analysis` (section 6). 422 invalid ticker (request validation). 429 daily cap or refresh too soon (with `retry_after`
   seconds). 502 upstream failed with nothing usable. 503 a required key is not configured.
 - Thin or empty news is **not** an error: it returns 200 with `stance: "unclear"`.
 
@@ -133,7 +133,7 @@ degrades the result (noted in `notes`) instead of failing the request.
 ## 9. Persistence, caching and limits
 
 Table `analyses`: `id`, `user_id` (always 1 for now), `ticker`, `position_hash`, `created_at`,
-`expires_at`, `model`, `personalized`, `payload` (JSON of the Analysis), `status`. The cache key is
+`expires_at`, `model`, `personalized`, `payload` (JSON of the Analysis). The cache key is
 (`ticker`, `position_hash`, `personalized`), where the hash changes when shares or average cost change.
 
 Config (environment, with defaults): `ANALYSIS_CACHE_HOURS=6`, `ANALYSIS_REFRESH_MIN_MINUTES=15`,
