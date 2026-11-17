@@ -79,3 +79,35 @@ export type NewWatch = {
 };
 
 export type NewPrice = { ticker: string; price: number; as_of: string };
+
+export type Stance = 'buy' | 'hold' | 'sell' | 'unclear';
+export type Confidence = 'low' | 'medium' | 'high';
+
+export type CasePoint = { point: string; source_ids: string[] };
+
+export type AnalysisSource = {
+  id: string;
+  title: string;
+  source: string;
+  published_at: string | null;
+  url: string;
+  origin: 'finnhub_company' | 'finnhub_market' | 'gdelt';
+};
+
+export type Analysis = {
+  ticker: string;
+  generated_at: string;
+  cached: boolean;
+  personalized: boolean;
+  stance: Stance;
+  confidence: Confidence;
+  summary: string;
+  case_for: CasePoint[];
+  case_against: CasePoint[];
+  watch_for: string[];
+  sources: AnalysisSource[];
+  notes: string[];
+  model: string;
+};
+
+export type AnalysisRequest = { ticker: string; refresh?: boolean; personalize?: boolean };

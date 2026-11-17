@@ -1,5 +1,7 @@
 import type {
   AllocationBy,
+  Analysis,
+  AnalysisRequest,
   AllocationSlice,
   HistoryPoint,
   HoldingMeta,
@@ -38,19 +40,27 @@ function detailToMessage(detail: unknown): string | null {
   return null;
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function request<T>(path: string, init: RequestInit = {}, timeoutMs = 15_000): Promise<T> {
   if (!BASE_URL || !API_KEY) {
     throw new ApiError(0, 'App is not configured: set EXPO_PUBLIC_API_URL and EXPO_PUBLIC_API_KEY.');
   }
 
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   let res: Response;
   try {
     res = await fetch(`${BASE_URL}${path}`, {
       ...init,
+      signal: controller.signal,
       headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY, ...init.headers },
     });
-  } catch {
+  } catch (e) {
+    if ((e as { name?: string })?.name === 'AbortError') {
+      throw new ApiError(0, 'The request took too long. Please try again.');
+    }
     throw new ApiError(0, `Could not reach the server at ${BASE_URL}.`);
+  } finally {
+    clearTimeout(timer);
   }
 
   if (!res.ok) {
@@ -91,6 +101,10 @@ export const api = {
   deleteWatch: (id: number) => request<void>(`/watchlist/${id}`, { method: 'DELETE' }),
   addPrice: (p: NewPrice) =>
     request<PricePoint>('/prices', { method: 'POST', body: JSON.stringify(p) }),
+  // A news analysis can take a while (news fetch + model call), so allow 90 seconds.
+  analyze: (req: AnalysisRequest) =>
+    request<Analysis>('/analysis', { method: 'POST', body: JSON.stringify(req) }, 90_000),
+  latestAnalysis: (ticker: string) => request<Analysis>(`/analysis/${encodeURIComponent(ticker)}`),
   putHolding: (ticker: string, meta: HoldingMeta) =>
     request<unknown>(`/holdings/${encodeURIComponent(ticker)}`, {
       method: 'PUT',
