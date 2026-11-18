@@ -17,6 +17,7 @@ import { useChartTheme } from '@/constants/chart-theme';
 import { BottomTabInset, Spacing } from '@/constants/theme';
 import { useAllocation, usePortfolioHistory } from '@/hooks/use-portfolio';
 import { usePortfolioSummary, useRecentTrades } from '@/hooks/use-trades';
+import { isAllUnassigned } from '@/lib/classification';
 import { buildSlices } from '@/lib/entity-colors';
 import { formatCurrency, formatPercent, formatSignedCurrency } from '@/lib/format';
 import type { AllocationBy } from '@/types';
@@ -107,6 +108,10 @@ export default function DashboardScreen() {
             <ChartNote>{allocation.error.message}</ChartNote>
           ) : slices.length === 0 ? (
             allocation.isPending ? <LoadingState /> : <ChartNote>No open positions to show yet.</ChartNote>
+          ) : by !== 'ticker' && isAllUnassigned(slices) ? (
+            <ChartNote>
+              {`None of your positions has a ${by === 'sector' ? 'sector' : 'asset class'} yet. Set it when you add a trade, or on a position's screen under Classification, to group by it. Use Ticker to see your allocation now.`}
+            </ChartNote>
           ) : (
             // key resets the focused slice when the dimension changes
             <AllocationDonut key={by} slices={slices} total={s.total_value} />

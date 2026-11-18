@@ -6,8 +6,10 @@ import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { useCreateTrade } from '@/hooks/use-trades';
+import { useSaveHoldingMeta } from '@/hooks/use-portfolio';
+import { useCreateTrade, usePortfolioSummary } from '@/hooks/use-trades';
 import { useTheme } from '@/hooks/use-theme';
+import { mergeClassification } from '@/lib/classification';
 import { haptic } from '@/lib/haptics';
 import { isISODate, todayISO } from '@/lib/format';
 import type { Side } from '@/types';
@@ -31,7 +33,11 @@ export default function AddTradeScreen() {
   const [fee, setFee] = useState('');
   const [date, setDate] = useState(todayISO());
   const [note, setNote] = useState('');
+  const [sector, setSector] = useState('');
+  const [assetClass, setAssetClass] = useState('');
   const [errors, setErrors] = useState<Errors>({});
+  const summary = usePortfolioSummary();
+  const saveMeta = useSaveHoldingMeta(ticker.trim().toUpperCase());
 
   function validate(): Errors {
     const e: Errors = {};
@@ -61,8 +67,23 @@ export default function AddTradeScreen() {
         note: note.trim() || null,
       },
       {
-        onSuccess: () => {
-          haptic('success');
+        onSuccess: async () => {
+          // Best effort: the trade is already saved, so a failed classification must not block
+          // closing. It can be set later on the position screen.
+          const upper = ticker.trim().toUpperCase();
+          const meta = mergeClassification(
+            summary.data?.holdings.find((h) => h.ticker === upper),
+            { sector, assetClass },
+          );
+          let metaFailed = false;
+          if (meta) {
+            try {
+              await saveMeta.mutateAsync(meta);
+            } catch {
+              metaFailed = true;
+            }
+          }
+          haptic(metaFailed ? 'warning' : 'success');
           close();
         },
         onError: () => haptic('error'),
@@ -150,6 +171,16 @@ export default function AddTradeScreen() {
             autoCapitalize: 'none',
           })}
           {field('Note (optional)', null, { value: note, onChangeText: setNote, placeholder: 'Why this trade?' })}
+          {field('Sector (optional)', null, {
+            value: sector,
+            onChangeText: setSector,
+            placeholder: 'Technology',
+          })}
+          {field('Asset class (optional)', null, {
+            value: assetClass,
+            onChangeText: setAssetClass,
+            placeholder: 'Stock, ETF, Bond…',
+          })}
 
           {create.isError ? (
             <ThemedText themeColor="loss" accessibilityRole="alert">
