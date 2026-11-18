@@ -14,6 +14,7 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useLatestAnalysis, useRunAnalysis } from '@/hooks/use-analysis';
 import { usePortfolioSummary } from '@/hooks/use-trades';
 import { timeAgo } from '@/lib/time-ago';
+import type { Analysis } from '@/types';
 
 export const DISCLAIMER =
   'Informational only, not financial advice. This view comes from recent news headlines and can be wrong or out of date.';
@@ -27,22 +28,32 @@ export default function AnalysisScreen() {
   const summary = usePortfolioSummary();
   const held = !!summary.data?.holdings.some((h) => h.ticker === ticker);
 
-  const [usePosition, setUsePosition] = useState(true);
+  // The newest run result lives here, separate from the stored "latest" query, so a refetch or
+  // a thin-news result (never stored on the server) cannot replace what the user just got.
+  const [shown, setShown] = useState<Analysis | null>(null);
+  const analysis = shown ?? latest.data ?? null;
+
+  // null = follow the displayed analysis; a boolean = the user's explicit choice.
+  const [override, setOverride] = useState<boolean | null>(null);
+  const usePosition = override ?? analysis?.personalized ?? true;
   const [dismissed, setDismissed] = useState(false);
   const personalize = held && usePosition;
 
   const start = (extra: { refresh?: boolean } = {}) => {
+    if (run.isPending) return;
     setDismissed(false);
-    run.mutate({ ...extra, personalize });
+    run.mutate({ ...extra, personalize }, { onSuccess: setShown });
   };
 
   const togglePosition = (value: boolean) => {
-    setUsePosition(value);
+    if (run.isPending) return;
+    const previous = usePosition;
+    setOverride(value);
+    // With nothing displayed this only changes the setting for the next explicit Analyze tap.
+    if (!analysis) return;
     setDismissed(false);
-    run.mutate({ personalize: value });
+    run.mutate({ personalize: value }, { onSuccess: setShown, onError: () => setOverride(previous) });
   };
-
-  const analysis = latest.data ?? null;
 
   let body: React.ReactNode;
   if (latest.isPending) {
@@ -113,7 +124,12 @@ export default function AnalysisScreen() {
         {held ? (
           <View style={styles.switchRow}>
             <ThemedText>Use my position</ThemedText>
-            <Switch accessibilityLabel="Use my position" value={usePosition} onValueChange={togglePosition} />
+            <Switch
+              accessibilityLabel="Use my position"
+              value={usePosition}
+              disabled={run.isPending}
+              onValueChange={togglePosition}
+            />
           </View>
         ) : null}
         {run.isError && !dismissed ? (

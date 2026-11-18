@@ -43,7 +43,7 @@ test('with no stored analysis it offers an explicit button and does not run by i
   await render(<AnalysisScreen />);
   expect(mockMutate).not.toHaveBeenCalled();
   await fireEvent.press(screen.getByRole('button', { name: 'Analyze with news' }));
-  expect(mockMutate).toHaveBeenCalledWith({ personalize: false });
+  expect(mockMutate).toHaveBeenCalledWith({ personalize: false }, expect.any(Object));
   expect(screen.getByText(DISCLAIMER)).toBeTruthy();
 });
 
@@ -72,7 +72,7 @@ test('Refresh asks for a refresh with the current position setting', async () =>
   mockSummary = { data: { holdings: [{ ticker: 'AAPL' }] } };
   await render(<AnalysisScreen />);
   await fireEvent.press(screen.getByRole('button', { name: 'Refresh' }));
-  expect(mockMutate).toHaveBeenCalledWith({ refresh: true, personalize: true });
+  expect(mockMutate).toHaveBeenCalledWith({ refresh: true, personalize: true }, expect.any(Object));
 });
 
 test('the position switch appears only for a held ticker and re-runs without the position when turned off', async () => {
@@ -84,7 +84,7 @@ test('the position switch appears only for a held ticker and re-runs without the
   mockSummary = { data: { holdings: [{ ticker: 'AAPL' }] } };
   await render(<AnalysisScreen />);
   await fireEvent(screen.getByLabelText('Use my position'), 'valueChange', false);
-  expect(mockMutate).toHaveBeenCalledWith({ personalize: false });
+  expect(mockMutate).toHaveBeenCalledWith({ personalize: false }, expect.any(Object));
 });
 
 test('an unclear result explains itself instead of showing empty sections', async () => {

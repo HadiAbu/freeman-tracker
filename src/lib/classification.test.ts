@@ -1,33 +1,16 @@
-import { isAllUnassigned, mergeClassification } from '@/lib/classification';
+import { enteredClassification, isAllUnassigned } from '@/lib/classification';
 
-describe('mergeClassification', () => {
+describe('enteredClassification', () => {
   test('returns null when nothing was entered', () => {
-    expect(mergeClassification(undefined, { sector: '  ', assetClass: '' })).toBeNull();
-    expect(mergeClassification({ sector: 'Tech' }, { sector: '', assetClass: '' })).toBeNull();
+    expect(enteredClassification({ sector: '  ', assetClass: '' })).toBeNull();
   });
 
-  test('a new ticker gets just what was entered', () => {
-    expect(mergeClassification(undefined, { sector: ' Technology ', assetClass: 'Stock' })).toEqual({
-      name: null,
-      sector: 'Technology',
+  test('includes only the fields that were entered, trimmed, never name or nulls', () => {
+    expect(enteredClassification({ sector: ' Technology ', assetClass: '' })).toEqual({ sector: 'Technology' });
+    expect(enteredClassification({ sector: '', assetClass: 'ETF' })).toEqual({ asset_class: 'ETF' });
+    expect(enteredClassification({ sector: 'Tech', assetClass: 'Stock' })).toEqual({
+      sector: 'Tech',
       asset_class: 'Stock',
-    });
-  });
-
-  test('a blank field keeps the stored value instead of wiping it', () => {
-    const existing = { name: 'Nvidia', sector: 'Technology', asset_class: 'Stock' };
-    expect(mergeClassification(existing, { sector: '', assetClass: 'ETF' })).toEqual({
-      name: 'Nvidia',
-      sector: 'Technology',
-      asset_class: 'ETF',
-    });
-  });
-
-  test('an entered field overrides the stored value', () => {
-    expect(mergeClassification({ sector: 'Old', asset_class: null }, { sector: 'New', assetClass: '' })).toEqual({
-      name: null,
-      sector: 'New',
-      asset_class: null,
     });
   });
 });

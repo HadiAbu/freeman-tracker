@@ -1,24 +1,17 @@
 import type { HoldingMeta } from '@/types';
 
-type Existing = { name?: string | null; sector?: string | null; asset_class?: string | null } | undefined;
-
 /**
- * Classification entered on the add-trade form, merged over what the holding already has.
- * PUT /holdings replaces all three fields, so a field left blank here must keep its stored
- * value instead of being wiped. Returns null when nothing was entered (no request needed).
+ * The fields the user actually typed on the add-trade form, for PATCH /holdings (which only
+ * changes the fields it is sent). Never includes name or nulls, so blank fields keep their
+ * stored value. Returns null when nothing was entered (no request needed).
  */
-export function mergeClassification(
-  existing: Existing,
-  input: { sector: string; assetClass: string },
-): HoldingMeta | null {
+export function enteredClassification(input: { sector: string; assetClass: string }): HoldingMeta | null {
   const sector = input.sector.trim();
   const assetClass = input.assetClass.trim();
-  if (!sector && !assetClass) return null;
-  return {
-    name: existing?.name ?? null,
-    sector: sector || existing?.sector || null,
-    asset_class: assetClass || existing?.asset_class || null,
-  };
+  const meta: HoldingMeta = {};
+  if (sector) meta.sector = sector;
+  if (assetClass) meta.asset_class = assetClass;
+  return Object.keys(meta).length > 0 ? meta : null;
 }
 
 /** True when a Sector / Asset class view has nothing to group by yet. */

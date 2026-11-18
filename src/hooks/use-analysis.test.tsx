@@ -59,14 +59,28 @@ test('a found analysis is returned', async () => {
   await waitFor(() => expect(result.current.data).toEqual(ANALYSIS));
 });
 
-test('running an analysis posts the ticker and fills the cache', async () => {
+test('running an analysis posts the ticker and does not write into the stored-latest cache', async () => {
   (api.analyze as jest.Mock).mockResolvedValue(ANALYSIS);
   const { client, Wrap } = wrapper();
+  client.setQueryData(analysisKey('AAPL'), { ticker: 'AAPL', stance: 'buy' });
   const { result } = await renderHook(() => useRunAnalysis('AAPL'), { wrapper: Wrap });
+  let returned: unknown;
   await act(async () => {
-    await result.current.mutateAsync({ refresh: true, personalize: false });
+    returned = await result.current.mutateAsync({ refresh: true, personalize: false });
   });
   await waitFor(() => expect(result.current.isSuccess).toBe(true));
   expect(api.analyze).toHaveBeenCalledWith({ ticker: 'AAPL', refresh: true, personalize: false });
-  expect(client.getQueryData(analysisKey('AAPL'))).toEqual(ANALYSIS);
+  expect(returned).toEqual(ANALYSIS);
+  expect(client.getQueryData(analysisKey('AAPL'))).toEqual({ ticker: 'AAPL', stance: 'buy' });
+});
+
+test('the stored-latest query never refetches on focus or reconnect', async () => {
+  (api.latestAnalysis as jest.Mock).mockResolvedValue(ANALYSIS);
+  const { client, Wrap } = wrapper();
+  const { result } = await renderHook(() => useLatestAnalysis('AAPL'), { wrapper: Wrap });
+  await waitFor(() => expect(result.current.data).toEqual(ANALYSIS));
+  const opts = client.getQueryCache().find({ queryKey: analysisKey('AAPL') })!.observers[0].options;
+  expect(opts.staleTime).toBe(Infinity);
+  expect(opts.refetchOnWindowFocus).toBe(false);
+  expect(opts.refetchOnReconnect).toBe(false);
 });

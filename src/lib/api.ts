@@ -122,4 +122,10 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify(meta),
     }),
+  // Partial update: only the fields present in `meta` change on the server.
+  patchHolding: (ticker: string, meta: HoldingMeta) =>
+    request<unknown>(`/holdings/${encodeURIComponent(ticker)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(meta),
+    }),
 };
