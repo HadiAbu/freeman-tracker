@@ -9,7 +9,10 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "test": "jest",
-    "test:watch": "jest --watchAll"
+    "test:watch": "jest --watchAll",
+    "test:ci": "jest --ci --coverage",
+    "typecheck": "tsc --noEmit",
+    "e2e": "maestro test .maestro"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
