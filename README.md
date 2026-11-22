@@ -113,13 +113,17 @@ directly.
 
 ## Builds (EAS)
 
-`eas.json` defines three profiles, each tied to an EAS environment of the same name:
+`eas.json` defines three profiles, each tied to an EAS environment and an EAS Update channel of the
+same name, so a build only receives updates meant for it:
 
 | Profile | Use |
 |---|---|
 | `development` | Development client (needs `expo-dev-client`), internal distribution |
-| `preview` | Installable build for testing on your own devices |
-| `production` | Store build, build number auto-incremented |
+| `preview` | Installable build for testing on your own devices; receives updates from the `preview` channel |
+| `production` | Store build, build number auto-incremented; receives updates from the `production` channel |
+
+Updates and store releases are staged (10% first). See [docs/releasing.md](docs/releasing.md) for the
+promotion path, rollout, rollback and the runtime-version rule.
 
 EAS builds do not read `.env.local`. Set the app's variables per environment first:
 

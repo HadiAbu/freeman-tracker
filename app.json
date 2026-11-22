@@ -47,6 +47,12 @@
         "projectId": "b897e2b6-490e-46a5-bcdf-fc87325b29c4"
       }
     },
-    "owner": "freemenalive"
+    "owner": "freemenalive",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/b897e2b6-490e-46a5-bcdf-fc87325b29c4"
+    }
   }
 }
