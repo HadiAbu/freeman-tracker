@@ -1,0 +1,13 @@
+appId: ${APP_ID}
+name: Smoke - app opens and every tab loads
+---
+- launchApp
+- assertVisible: Dashboard
+- tapOn: Portfolio
+- assertVisible: Portfolio
+- tapOn: Watchlist
+- assertVisible: Watchlist
+- tapOn: Trades
+- assertVisible: Trades
+- tapOn: Dashboard
+- assertVisible: Portfolio value

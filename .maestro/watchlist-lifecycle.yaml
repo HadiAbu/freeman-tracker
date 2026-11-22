@@ -1,0 +1,30 @@
+appId: ${APP_ID}
+name: Watchlist - add, log a price, check the target maths, remove
+---
+# Writes to the API the app points at, then removes what it wrote. Use a test API.
+- launchApp
+- tapOn: Watchlist
+- tapOn: Add ticker
+
+- tapOn: NVDA
+- inputText: E2EWATCH
+- tapOn: '500'
+- inputText: '100'
+- hideKeyboard
+- tapOn: Save
+
+- assertVisible: E2EWATCH
+- assertVisible: no price yet
+
+# Log a price 10 below the target: (100 - 90) / 90 = 11.11% to go.
+- tapOn: E2EWATCH
+- inputText: '90'
+- hideKeyboard
+- tapOn: Save price
+- assertVisible: 'Target \$100.00 · \+11.11% to go'
+
+# Clean up.
+- longPressOn: E2EWATCH
+- tapOn:
+    text: '(?i)remove'
+- assertNotVisible: E2EWATCH

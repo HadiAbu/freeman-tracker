@@ -1,0 +1,27 @@
+appId: ${APP_ID}
+name: Trades - add a buy, see it listed, delete it
+---
+# Writes to the API the app points at, then removes what it wrote. Use a test API.
+- launchApp
+- tapOn: Trades
+- tapOn: Add trade
+
+# Fields are found by their placeholder text.
+- tapOn: AAPL
+- inputText: E2ETRADE
+- tapOn: '10'
+- inputText: '3'
+- tapOn: '189.50'
+- inputText: '100'
+- hideKeyboard
+- tapOn: Save trade
+
+# Back on the list with the new trade at the top.
+- assertVisible: E2ETRADE
+- assertVisible: BUY
+
+# Clean up: long press, confirm in the native alert.
+- longPressOn: E2ETRADE
+- tapOn:
+    text: '(?i)delete'
+- assertNotVisible: E2ETRADE
