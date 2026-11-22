@@ -4,6 +4,8 @@ process.env.EXPO_PUBLIC_API_KEY = 'test-key';
 
 module.exports = {
   preset: 'jest-expo',
+  setupFiles: ['<rootDir>/test/setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/test/setup-after-env.js'],
   // The first test in a file pays for transforming the whole React Native tree, which can
   // pass the 5 s default on a cold cache or under coverage instrumentation.
   testTimeout: 30_000,
