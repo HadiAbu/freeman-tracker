@@ -5,10 +5,12 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { formatCurrency, formatPercent, formatShares, formatSignedCurrency } from '@/lib/format';
+import { useMoney } from '@/hooks/use-money';
+import { formatPercent } from '@/lib/format';
 import type { Holding } from '@/types';
 
 export function HoldingRow({ holding: h }: { holding: Holding }) {
+  const money = useMoney();
   const color = h.unrealized_pnl > 0 ? 'gain' : h.unrealized_pnl < 0 ? 'loss' : 'textSecondary';
   const arrow = h.unrealized_pnl > 0 ? '▲' : h.unrealized_pnl < 0 ? '▼' : '';
 
@@ -20,14 +22,14 @@ export function HoldingRow({ holding: h }: { holding: Holding }) {
             <ThemedText type="smallBold">{h.ticker}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
               {h.name ? `${h.name} · ` : ''}
-              {formatShares(h.shares)} @ {formatCurrency(h.avg_cost)}
+              {money.shares(h.shares)} @ {money.currency(h.avg_cost)}
             </ThemedText>
           </View>
           <View style={styles.right}>
-            <ThemedText type="smallBold">{formatCurrency(h.market_value)}</ThemedText>
+            <ThemedText type="smallBold">{money.currency(h.market_value)}</ThemedText>
             {/* arrow + sign + color: the direction never relies on color alone */}
             <ThemedText type="small" themeColor={color}>
-              {arrow} {formatSignedCurrency(h.unrealized_pnl)} ({formatPercent(h.unrealized_pct)})
+              {arrow} {money.signedCurrency(h.unrealized_pnl)} ({formatPercent(h.unrealized_pct)})
             </ThemedText>
           </View>
         </ThemedView>

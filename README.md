@@ -37,6 +37,25 @@ asset class (these drive the Sector and Asset class views).
    npx expo start        # then press w for web, or scan the QR code with Expo Go
    ```
 
+## App state
+
+Server data (trades, holdings, prices, analyses) lives in TanStack Query, and its cache is saved to the
+device so the app opens with the last known data. Settings and drafts the user creates live in two
+small Zustand stores (`src/stores/`), saved to AsyncStorage:
+
+| Store | What it keeps |
+|---|---|
+| `preferences` | **Hide balances** (the eye button on Dashboard and Portfolio masks every amount and share count; percentages and a ticker's market price stay visible), the dashboard allocation view, the Trades filter, and the starting value of "Use my position" |
+| `trade-draft` | The add-trade form, so a dismissed modal or a killed app loses nothing. Cancel discards it, a saved trade clears it, and a date is only kept if the user typed one |
+
+The root layout waits for both stores before drawing any screen, so a saved "hide balances" is applied
+before the first frame instead of flashing real amounts. If storage fails to load, the stores keep
+their defaults and the app still opens. Values read back from storage are validated, so a bad or old
+saved value falls back to its default.
+
+Format money through `useMoney()` (`src/hooks/use-money.ts`), not `formatCurrency` directly, so it
+respects hide-balances. Plain `formatCurrency` is right for a ticker's market price.
+
 ## Checks
 
 ```bash

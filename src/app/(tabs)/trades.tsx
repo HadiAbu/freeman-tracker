@@ -13,6 +13,7 @@ import { BottomTabInset, Spacing } from '@/constants/theme';
 import { useDeleteTrade, useTradePages } from '@/hooks/use-trades';
 import { haptic } from '@/lib/haptics';
 import { confirmDestructive } from '@/lib/confirm';
+import { usePreferences } from '@/stores/preferences';
 import type { Side, Trade } from '@/types';
 
 const FILTERS: { label: string; value: Side | undefined }[] = [
@@ -28,7 +29,10 @@ function confirmDelete(trade: Trade, onConfirm: () => void) {
 
 export default function TradesScreen() {
   const router = useRouter();
-  const [side, setSide] = useState<Side | undefined>(undefined);
+  // remembered between launches (null is "All")
+  const savedSide = usePreferences((s) => s.tradesSide);
+  const setSavedSide = usePreferences((s) => s.setTradesSide);
+  const side: Side | undefined = savedSide ?? undefined;
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const trades = useTradePages(side);
   const remove = useDeleteTrade();
@@ -67,7 +71,7 @@ export default function TradesScreen() {
               key={f.label}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
-              onPress={() => setSide(f.value)}>
+              onPress={() => setSavedSide(f.value ?? null)}>
               <ThemedView type={active ? 'backgroundSelected' : 'backgroundElement'} style={styles.pill}>
                 <ThemedText type="small" themeColor={active ? 'text' : 'textSecondary'}>
                   {f.label}

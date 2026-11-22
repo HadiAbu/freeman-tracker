@@ -5,7 +5,8 @@ import { BarChart } from 'react-native-gifted-charts';
 import { ChartNote } from '@/components/charts/chart-card';
 import { useChartTheme } from '@/constants/chart-theme';
 import { useChartWidth } from '@/hooks/use-chart-width';
-import { formatCompactCurrency, niceStep } from '@/lib/format';
+import { useMoney } from '@/hooks/use-money';
+import { niceStep } from '@/lib/format';
 import type { Holding } from '@/types';
 
 const Y_LABEL_WIDTH = 52;
@@ -21,6 +22,7 @@ const HEIGHT = 160;
  */
 export function PnLBars({ holdings }: { holdings: Holding[] }) {
   const c = useChartTheme();
+  const money = useMoney();
   const width = useChartWidth();
 
   if (holdings.length === 0) return <ChartNote>No open positions yet.</ChartNote>;
@@ -81,7 +83,7 @@ export function PnLBars({ holdings }: { holdings: Holding[] }) {
       mostNegativeValue={-negSections * step}
       negativeStepValue={step}
       yAxisLabelWidth={Y_LABEL_WIDTH}
-      formatYLabel={(v: string) => formatCompactCurrency(Number(v))}
+      formatYLabel={(v: string) => money.compactCurrency(Number(v))}
       yAxisTextStyle={{ color: c.muted, fontSize: 11 }}
       yAxisColor="transparent"
       xAxisColor={c.axis}

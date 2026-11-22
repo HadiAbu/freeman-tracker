@@ -4,12 +4,14 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { formatCurrency, formatShares } from '@/lib/format';
+import { useMoney } from '@/hooks/use-money';
+import { formatCurrency } from '@/lib/format';
 import type { Trade } from '@/types';
 
 type Props = { trade: Trade; onLongPress?: (trade: Trade) => void };
 
 export function TradeRow({ trade, onLongPress }: Props) {
+  const money = useMoney();
   const buy = trade.side === 'buy';
   const total = trade.shares * trade.price + (buy ? trade.fee : -trade.fee);
 
@@ -26,7 +28,7 @@ export function TradeRow({ trade, onLongPress }: Props) {
             </ThemedText>
           </View>
           <ThemedText type="small" themeColor="textSecondary">
-            {formatShares(trade.shares)} × {formatCurrency(trade.price)} · {trade.traded_at}
+            {money.shares(trade.shares)} × {formatCurrency(trade.price)} · {trade.traded_at}
           </ThemedText>
           {trade.note ? (
             <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
@@ -34,7 +36,7 @@ export function TradeRow({ trade, onLongPress }: Props) {
             </ThemedText>
           ) : null}
         </View>
-        <ThemedText type="smallBold">{formatCurrency(total)}</ThemedText>
+        <ThemedText type="smallBold">{money.currency(total)}</ThemedText>
       </ThemedView>
     </Pressable>
   );

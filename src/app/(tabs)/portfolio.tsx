@@ -4,15 +4,17 @@ import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { ChartCard } from '@/components/charts/chart-card';
 import { PnLBars } from '@/components/charts/pnl-bars';
 import { HoldingRow } from '@/components/holding-row';
+import { PrivacyToggle } from '@/components/privacy-toggle';
 import { Screen } from '@/components/screen';
 import { EmptyState, ErrorState, LoadingState } from '@/components/screen-state';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, Spacing } from '@/constants/theme';
+import { useMoney } from '@/hooks/use-money';
 import { usePortfolioSummary } from '@/hooks/use-trades';
-import { formatCurrency, formatSignedCurrency } from '@/lib/format';
 
 export default function PortfolioScreen() {
   const summary = usePortfolioSummary();
+  const money = useMoney();
 
   if (summary.isPending) return <Screen><LoadingState /></Screen>;
   if (summary.isError) {
@@ -29,7 +31,7 @@ export default function PortfolioScreen() {
   }
 
   const chartSummary = holdings
-    .map((h) => `${h.ticker} ${formatSignedCurrency(h.unrealized_pnl)}`)
+    .map((h) => `${h.ticker} ${money.signedCurrency(h.unrealized_pnl)}`)
     .join(', ');
 
   return (
@@ -37,7 +39,10 @@ export default function PortfolioScreen() {
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={summary.isRefetching} onRefresh={async () => { await summary.refetch(); }} />}>
-        <ThemedText type="subtitle">Portfolio</ThemedText>
+        <View style={styles.titleRow}>
+          <ThemedText type="subtitle">Portfolio</ThemedText>
+          <PrivacyToggle />
+        </View>
 
         <ChartCard
           title="Unrealized gain / loss"
@@ -49,7 +54,7 @@ export default function PortfolioScreen() {
         <View style={styles.listHeader}>
           <ThemedText type="smallBold">Holdings</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            {formatCurrency(summary.data.total_value)}
+            {money.currency(summary.data.total_value)}
           </ThemedText>
         </View>
         {holdings.map((h) => (
@@ -62,5 +67,6 @@ export default function PortfolioScreen() {
 
 const styles = StyleSheet.create({
   content: { gap: Spacing.three, paddingVertical: Spacing.three, paddingBottom: BottomTabInset + Spacing.four },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   listHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: Spacing.two },
 });

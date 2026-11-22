@@ -6,6 +6,7 @@ import { ChartNote } from '@/components/charts/chart-card';
 import { useChartTheme } from '@/constants/chart-theme';
 import { Spacing } from '@/constants/theme';
 import { useChartWidth } from '@/hooks/use-chart-width';
+import { useMoney } from '@/hooks/use-money';
 import { formatCompactCurrency, formatCurrency, formatShortDate, niceStep } from '@/lib/format';
 
 export type TrendPoint = { date: string; value: number };
@@ -17,6 +18,8 @@ type Props = {
   secondary?: number[];
   secondaryName?: string;
   emptyHint?: string;
+  /** The values are the user's own money (not a market price): mask them while balances are hidden. */
+  sensitive?: boolean;
 };
 
 const Y_LABEL_WIDTH = 52;
@@ -43,8 +46,11 @@ export function TrendLine({
   secondary: allSecondary,
   secondaryName,
   emptyHint,
+  sensitive = false,
 }: Props) {
   const c = useChartTheme();
+  const money = useMoney();
+  const mask = sensitive && money.hidden;
   const width = useChartWidth();
   // A phone cannot show more than a few dozen distinct points, and the library gives each
   // x label only one point's width. Thin long histories evenly (always keeping first and last).
@@ -114,7 +120,7 @@ export function TrendLine({
         noOfSections={sections}
         yAxisLabelWidth={Y_LABEL_WIDTH}
         // the library already adds yAxisOffset to the tick labels it passes in
-        formatYLabel={(v: string) => formatCompactCurrency(Number(v))}
+        formatYLabel={(v: string) => (mask ? money.compactCurrency(Number(v)) : formatCompactCurrency(Number(v)))}
         yAxisTextStyle={{ color: c.muted, fontSize: 11 }}
         yAxisColor="transparent"
         xAxisColor={c.axis}
@@ -137,11 +143,11 @@ export function TrendLine({
             <View style={[styles.tip, { backgroundColor: c.surface, borderColor: c.border }]}>
               <Text style={[styles.tipDate, { color: c.inkSecondary }]}>{formatShortDate(items[0].date)}</Text>
               <Text style={[styles.tipValue, { color: c.ink }]}>
-                {primaryName} {formatCurrency(items[0].value)}
+                {primaryName} {mask ? money.currency(items[0].value) : formatCurrency(items[0].value)}
               </Text>
               {secondary && items[1] ? (
                 <Text style={[styles.tipValue, { color: c.ink }]}>
-                  {secondaryName} {formatCurrency(items[1].value)}
+                  {secondaryName} {mask ? money.currency(items[1].value) : formatCurrency(items[1].value)}
                 </Text>
               ) : null}
             </View>

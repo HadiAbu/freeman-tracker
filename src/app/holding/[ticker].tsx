@@ -11,10 +11,11 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TradeRow } from '@/components/trade-row';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useMoney } from '@/hooks/use-money';
 import { usePriceHistory, useSaveHoldingMeta } from '@/hooks/use-portfolio';
 import { usePortfolioSummary, useTickerTrades } from '@/hooks/use-trades';
 import { haptic } from '@/lib/haptics';
-import { formatCurrency, formatPercent, formatShares, formatSignedCurrency } from '@/lib/format';
+import { formatCurrency, formatPercent } from '@/lib/format';
 import type { Holding } from '@/types';
 
 function Stat({ label, value, color }: { label: string; value: string; color?: 'gain' | 'loss' }) {
@@ -100,28 +101,29 @@ export default function HoldingScreen() {
 }
 
 function Position({ holding: h }: { holding: Holding }) {
+  const money = useMoney();
   const pnlColor = h.unrealized_pnl > 0 ? 'gain' : h.unrealized_pnl < 0 ? 'loss' : undefined;
   return (
     <ThemedView type="backgroundElement" style={styles.card}>
       {h.name ? <ThemedText type="small" themeColor="textSecondary">{h.name}</ThemedText> : null}
       <ThemedText type="title" style={styles.value}>
-        {formatCurrency(h.market_value)}
+        {money.currency(h.market_value)}
       </ThemedText>
       <ThemedText type="smallBold" themeColor={pnlColor}>
         {h.unrealized_pnl > 0 ? '▲ ' : h.unrealized_pnl < 0 ? '▼ ' : ''}
-        {formatSignedCurrency(h.unrealized_pnl)} ({formatPercent(h.unrealized_pct)})
+        {money.signedCurrency(h.unrealized_pnl)} ({formatPercent(h.unrealized_pct)})
       </ThemedText>
       <View style={styles.stats}>
-        <Stat label="Shares" value={formatShares(h.shares)} />
-        <Stat label="Avg cost" value={formatCurrency(h.avg_cost)} />
+        <Stat label="Shares" value={money.shares(h.shares)} />
+        <Stat label="Avg cost" value={money.currency(h.avg_cost)} />
         <Stat
           label={h.price_source === 'price' ? 'Price' : 'Last trade price'}
           value={formatCurrency(h.price)}
         />
-        <Stat label="Cost basis" value={formatCurrency(h.cost_basis)} />
+        <Stat label="Cost basis" value={money.currency(h.cost_basis)} />
         <Stat
           label="Realized"
-          value={formatSignedCurrency(h.realized_pnl)}
+          value={money.signedCurrency(h.realized_pnl)}
           color={h.realized_pnl > 0 ? 'gain' : h.realized_pnl < 0 ? 'loss' : undefined}
         />
       </View>

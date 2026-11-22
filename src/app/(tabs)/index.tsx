@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
@@ -8,6 +8,7 @@ import { ChartCard, ChartNote } from '@/components/charts/chart-card';
 import { TrendLine } from '@/components/charts/trend-line';
 import { ChipRow } from '@/components/chip-row';
 import { ErrorBanner } from '@/components/error-banner';
+import { PrivacyToggle } from '@/components/privacy-toggle';
 import { Screen } from '@/components/screen';
 import { ErrorState, LoadingState } from '@/components/screen-state';
 import { ThemedText } from '@/components/themed-text';
@@ -15,11 +16,13 @@ import { ThemedView } from '@/components/themed-view';
 import { TradeRow } from '@/components/trade-row';
 import { useChartTheme } from '@/constants/chart-theme';
 import { BottomTabInset, Spacing } from '@/constants/theme';
+import { useMoney } from '@/hooks/use-money';
 import { useAllocation, usePortfolioHistory } from '@/hooks/use-portfolio';
 import { usePortfolioSummary, useRecentTrades } from '@/hooks/use-trades';
 import { isAllUnassigned } from '@/lib/classification';
 import { buildSlices } from '@/lib/entity-colors';
-import { formatCurrency, formatPercent, formatSignedCurrency } from '@/lib/format';
+import { formatPercent } from '@/lib/format';
+import { usePreferences } from '@/stores/preferences';
 import type { AllocationBy } from '@/types';
 
 const DIMENSIONS: { label: string; value: AllocationBy }[] = [
@@ -31,7 +34,10 @@ const DIMENSIONS: { label: string; value: AllocationBy }[] = [
 export default function DashboardScreen() {
   const router = useRouter();
   const chart = useChartTheme();
-  const [by, setBy] = useState<AllocationBy>('ticker');
+  const money = useMoney();
+  // remembered between launches
+  const by = usePreferences((s) => s.allocationBy);
+  const setBy = usePreferences((s) => s.setAllocationBy);
 
   const summary = usePortfolioSummary();
   const trades = useRecentTrades(5);
@@ -61,20 +67,23 @@ export default function DashboardScreen() {
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}>
-        <ThemedText type="subtitle">Dashboard</ThemedText>
+        <View style={styles.titleRow}>
+          <ThemedText type="subtitle">Dashboard</ThemedText>
+          <PrivacyToggle />
+        </View>
 
         <ThemedView type="backgroundElement" style={styles.card}>
           <ThemedText type="small" themeColor="textSecondary">
             Portfolio value
           </ThemedText>
           <ThemedText type="title" style={styles.value}>
-            {formatCurrency(s.total_value)}
+            {money.currency(s.total_value)}
           </ThemedText>
           <ThemedText type="smallBold" themeColor={pnlColor}>
-            {formatSignedCurrency(s.unrealized_pnl)} ({formatPercent(s.unrealized_pct)}) unrealized
+            {money.signedCurrency(s.unrealized_pnl)} ({formatPercent(s.unrealized_pct)}) unrealized
           </ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            Cost {formatCurrency(s.total_cost)} · Realized {formatSignedCurrency(s.realized_pnl)}
+            Cost {money.currency(s.total_cost)} · Realized {money.signedCurrency(s.realized_pnl)}
           </ThemedText>
         </ThemedView>
 
@@ -88,6 +97,7 @@ export default function DashboardScreen() {
               points={history.data.map((p) => ({ date: p.date, value: p.value }))}
               secondary={history.data.map((p) => p.cost)}
               primaryName="Value"
+              sensitive
               secondaryName="Cost basis"
               emptyHint="The line appears once you have activity on two different dates."
             />
@@ -140,6 +150,7 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   content: { gap: Spacing.three, paddingVertical: Spacing.three, paddingBottom: BottomTabInset + Spacing.four },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   card: { padding: Spacing.four, borderRadius: Spacing.four, gap: Spacing.one },
   value: { fontSize: 40, lineHeight: 48 },
   filterRow: { gap: Spacing.two, marginTop: Spacing.two },

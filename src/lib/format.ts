@@ -34,6 +34,30 @@ export const formatSignedCurrency = (n: number) => `${n > 0 ? '+' : n < 0 ? '-' 
 /** Signed percent, e.g. +4.20% */
 export const formatPercent = (n: number) => `${n > 0 ? '+' : ''}${n.toFixed(2)}%`;
 
+/** What an amount shows as while balances are hidden. */
+export const MASK = '••••';
+
+export type MoneyFormatters = {
+  hidden: boolean;
+  currency: (n: number) => string;
+  signedCurrency: (n: number) => string;
+  compactCurrency: (n: number) => string;
+  shares: (n: number) => string;
+};
+
+/**
+ * The formatters for amounts of money and share counts, or the same functions returning a mask
+ * when balances are hidden. Percentages and prices of a ticker are not private and stay on the
+ * plain formatters.
+ */
+export function moneyFormatters(hidden: boolean): MoneyFormatters {
+  if (!hidden) {
+    return { hidden, currency: formatCurrency, signedCurrency: formatSignedCurrency, compactCurrency: formatCompactCurrency, shares: formatShares };
+  }
+  const mask = () => MASK;
+  return { hidden, currency: mask, signedCurrency: mask, compactCurrency: mask, shares: mask };
+}
+
 /** Today as YYYY-MM-DD in the device's local time zone. */
 export function todayISO(): string {
   const d = new Date();
