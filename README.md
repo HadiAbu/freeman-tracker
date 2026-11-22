@@ -40,15 +40,44 @@ asset class (these drive the Sector and Asset class views).
 ## Checks
 
 ```bash
-npx tsc --noEmit      # typecheck
-npx expo lint
+npm run typecheck     # tsc --noEmit
+npm run lint          # expo lint
+npm test              # Jest, fast, no coverage
+npm run test:ci       # Jest with coverage and the coverage thresholds (what CI runs)
 npx expo-doctor
 ```
 
 **Route types gotcha.** `expo lint`, `expo export` and `expo install` rewrite the generated
 `.expo/types/router.d.ts` in a form that makes `tsc` reject `"/"`. Regenerate it by starting the dev
-server once (`npx expo start`), then run `tsc`. Lint also reports one known error in the template's
-`src/hooks/use-color-scheme.web.ts`.
+server once (`npx expo start`), then run `tsc`.
+
+## Tests
+
+**Unit and component tests (Jest + Testing Library).** Run on every push and pull request by
+`.github/workflows/ci.yml`, which runs typecheck, lint and `npm run test:ci` in that order. Coverage
+must stay above the floor in `jest.config.js`; raise the floor as coverage grows.
+
+- Screen tests live in `src/__tests__/`, hook, component and library tests sit next to their code.
+  Keep test files out of `src/app/`: every file there becomes a route.
+- `src/test-utils/` has `renderWithClient` (a fresh React Query client per test, with the gc timers
+  turned off so Jest can exit) and typed fixtures.
+- Tests mock `@/lib/api` and `expo-router`, so they never touch the network. The SVG charts are
+  mocked in screen tests; their props are what the screen is responsible for.
+
+**End-to-end flows (Maestro).** `.maestro/` drives the real app: a smoke test of every tab, and
+add-then-delete lifecycles for trades and the watchlist. They are not part of CI because they need
+an emulator or device.
+
+```bash
+# install: https://docs.maestro.dev/getting-started/installing-maestro
+npx expo run:android            # or run:ios, or install a development build from EAS
+APP_ID=<your app's package or bundle id>
+maestro test -e APP_ID=$APP_ID .maestro
+```
+
+The lifecycle flows create records named `E2E…` and delete them at the end, but they do write to
+whatever API the app points at, so point the app at a test or local API, not your real data. Field
+lookups use placeholder text (`AAPL`, `NVDA`, …); if you change a placeholder, update the flows.
 
 ## Troubleshooting
 

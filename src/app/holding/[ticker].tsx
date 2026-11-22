@@ -74,6 +74,11 @@ export default function HoldingScreen() {
           variant="secondary"
           onPress={() => router.push({ pathname: '/log-price', params: { ticker } })}
         />
+        <Button
+          title="Research with news"
+          variant="secondary"
+          onPress={() => router.push({ pathname: '/analysis/[ticker]', params: { ticker } })}
+        />
 
         <ChartCard title="Price" subtitle="Your trade prices and any price marks you have logged">
           <TrendLine

@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { api } from '@/lib/api';
-import type { NewTrade, Side } from '@/types';
+import type { HoldingMeta, NewTrade, Side } from '@/types';
 
 // Every trades query lives under ['trades'], so one invalidation refreshes all of them.
 export const tradeKeys = {
@@ -60,6 +60,31 @@ function useInvalidateAfterTradeChange() {
 export function useCreateTrade() {
   const invalidate = useInvalidateAfterTradeChange();
   return useMutation({ mutationFn: (t: NewTrade) => api.createTrade(t), onSuccess: invalidate });
+}
+
+/**
+ * Creates the trade and, when the user typed a sector / asset class, saves ONLY those fields
+ * with a partial update. It is one mutationFn so the classification is still saved if the
+ * screen unmounts mid-request. A failed classification never fails the trade: the result
+ * carries `classificationFailed` so the screen can tell the user.
+ */
+export function useCreateTradeWithClassification() {
+  const invalidate = useInvalidateAfterTradeChange();
+  return useMutation({
+    mutationFn: async ({ trade, classification }: { trade: NewTrade; classification: HoldingMeta | null }) => {
+      const created = await api.createTrade(trade);
+      let classificationFailed = false;
+      if (classification) {
+        try {
+          await api.patchHolding(trade.ticker, classification);
+        } catch {
+          classificationFailed = true;
+        }
+      }
+      return { trade: created, classificationFailed };
+    },
+    onSuccess: invalidate,
+  });
 }
 
 export function useDeleteTrade() {

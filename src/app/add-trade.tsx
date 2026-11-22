@@ -1,13 +1,14 @@
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { useCreateTrade } from '@/hooks/use-trades';
+import { useCreateTradeWithClassification } from '@/hooks/use-trades';
 import { useTheme } from '@/hooks/use-theme';
+import { enteredClassification } from '@/lib/classification';
 import { haptic } from '@/lib/haptics';
 import { isISODate, todayISO } from '@/lib/format';
 import type { Side } from '@/types';
@@ -19,7 +20,7 @@ const num = (s: string) => Number(s.trim().replace(',', '.'));
 export default function AddTradeScreen() {
   const router = useRouter();
   const theme = useTheme();
-  const create = useCreateTrade();
+  const create = useCreateTradeWithClassification();
 
   // Opened via deep link / page reload there is no history to go back to.
   const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
@@ -31,7 +32,12 @@ export default function AddTradeScreen() {
   const [fee, setFee] = useState('');
   const [date, setDate] = useState(todayISO());
   const [note, setNote] = useState('');
+  const [sector, setSector] = useState('');
+  const [assetClass, setAssetClass] = useState('');
   const [errors, setErrors] = useState<Errors>({});
+  // Synchronous guard: a fast double tap can land before the pending state has re-rendered.
+  const busy = useRef(false);
+  const [classificationFailed, setClassificationFailed] = useState(false);
 
   function validate(): Errors {
     const e: Errors = {};
@@ -44,28 +50,44 @@ export default function AddTradeScreen() {
   }
 
   function submit() {
+    // One trade per tap: ignore re-entry while the save (trade + classification) is running or done.
+    if (busy.current || create.isPending || classificationFailed) return;
     const e = validate();
     setErrors(e);
     if (Object.keys(e).length > 0) {
       haptic('warning');
       return;
     }
+    busy.current = true;
     create.mutate(
       {
-        ticker: ticker.trim().toUpperCase(),
-        side,
-        shares: num(shares),
-        price: num(price),
-        fee: fee.trim() === '' ? 0 : num(fee),
-        traded_at: date.trim(),
-        note: note.trim() || null,
+        trade: {
+          ticker: ticker.trim().toUpperCase(),
+          side,
+          shares: num(shares),
+          price: num(price),
+          fee: fee.trim() === '' ? 0 : num(fee),
+          traded_at: date.trim(),
+          note: note.trim() || null,
+        },
+        classification: enteredClassification({ sector, assetClass }),
       },
       {
-        onSuccess: () => {
+        onSuccess: ({ classificationFailed }) => {
+          // The trade is saved either way. If only the classification failed, stay open and say
+          // so (a haptic alone is invisible), then let the user close.
+          if (classificationFailed) {
+            haptic('warning');
+            setClassificationFailed(true);
+            return;
+          }
           haptic('success');
           close();
         },
-        onError: () => haptic('error'),
+        onError: () => {
+          busy.current = false;
+          haptic('error');
+        },
       },
     );
   }
@@ -150,6 +172,16 @@ export default function AddTradeScreen() {
             autoCapitalize: 'none',
           })}
           {field('Note (optional)', null, { value: note, onChangeText: setNote, placeholder: 'Why this trade?' })}
+          {field('Sector (optional)', null, {
+            value: sector,
+            onChangeText: setSector,
+            placeholder: 'Technology',
+          })}
+          {field('Asset class (optional)', null, {
+            value: assetClass,
+            onChangeText: setAssetClass,
+            placeholder: 'Stock, ETF, Bond…',
+          })}
 
           {create.isError ? (
             <ThemedText themeColor="loss" accessibilityRole="alert">
@@ -157,8 +189,19 @@ export default function AddTradeScreen() {
             </ThemedText>
           ) : null}
 
-          <Button title="Save trade" onPress={submit} loading={create.isPending} />
-          <Button title="Cancel" variant="secondary" onPress={close} />
+          {classificationFailed ? (
+            <>
+              <ThemedText accessibilityRole="alert">
+                Trade saved, but the classification could not be saved. Set it on the position screen.
+              </ThemedText>
+              <Button title="Done" onPress={close} />
+            </>
+          ) : (
+            <>
+              <Button title="Save trade" onPress={submit} loading={create.isPending} />
+              <Button title="Cancel" variant="secondary" onPress={close} />
+            </>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </ThemedView>

@@ -1,5 +1,7 @@
 import type {
   AllocationBy,
+  Analysis,
+  AnalysisRequest,
   AllocationSlice,
   HistoryPoint,
   HoldingMeta,
@@ -38,31 +40,51 @@ function detailToMessage(detail: unknown): string | null {
   return null;
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function request<T>(path: string, init: RequestInit = {}, timeoutMs = 15_000): Promise<T> {
   if (!BASE_URL || !API_KEY) {
     throw new ApiError(0, 'App is not configured: set EXPO_PUBLIC_API_URL and EXPO_PUBLIC_API_KEY.');
   }
 
-  let res: Response;
-  try {
-    res = await fetch(`${BASE_URL}${path}`, {
-      ...init,
-      headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY, ...init.headers },
-    });
-  } catch {
-    throw new ApiError(0, `Could not reach the server at ${BASE_URL}.`);
-  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const isAbort = (e: unknown) => (e as { name?: string })?.name === 'AbortError';
+  const tooLong = () => new ApiError(0, 'The request took too long. Please try again.');
 
-  if (!res.ok) {
-    let message = `Request failed (${res.status})`;
+  // The timer stays armed until the body has been read, so a server that sends headers and
+  // then stalls cannot hang the caller forever.
+  try {
+    let res: Response;
     try {
-      message = detailToMessage((await res.json()).detail) ?? message;
-    } catch {
-      // non-JSON error body; keep the generic message
+      res = await fetch(`${BASE_URL}${path}`, {
+        ...init,
+        signal: controller.signal,
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY, ...init.headers },
+      });
+    } catch (e) {
+      if (isAbort(e)) throw tooLong();
+      throw new ApiError(0, `Could not reach the server at ${BASE_URL}.`);
     }
-    throw new ApiError(res.status, message);
+
+    if (!res.ok) {
+      let message = `Request failed (${res.status})`;
+      try {
+        message = detailToMessage((await res.json()).detail) ?? message;
+      } catch (e) {
+        if (isAbort(e)) throw tooLong();
+        // non-JSON error body; keep the generic message
+      }
+      throw new ApiError(res.status, message);
+    }
+    if (res.status === 204) return undefined as T;
+    try {
+      return (await res.json()) as T;
+    } catch (e) {
+      if (isAbort(e)) throw tooLong();
+      throw e;
+    }
+  } finally {
+    clearTimeout(timer);
   }
-  return res.status === 204 ? (undefined as T) : ((await res.json()) as T);
 }
 
 export const api = {
@@ -91,9 +113,19 @@ export const api = {
   deleteWatch: (id: number) => request<void>(`/watchlist/${id}`, { method: 'DELETE' }),
   addPrice: (p: NewPrice) =>
     request<PricePoint>('/prices', { method: 'POST', body: JSON.stringify(p) }),
+  // A news analysis can take a while (news fetch + model call), so allow 90 seconds.
+  analyze: (req: AnalysisRequest) =>
+    request<Analysis>('/analysis', { method: 'POST', body: JSON.stringify(req) }, 90_000),
+  latestAnalysis: (ticker: string) => request<Analysis>(`/analysis/${encodeURIComponent(ticker)}`),
   putHolding: (ticker: string, meta: HoldingMeta) =>
     request<unknown>(`/holdings/${encodeURIComponent(ticker)}`, {
       method: 'PUT',
+      body: JSON.stringify(meta),
+    }),
+  // Partial update: only the fields present in `meta` change on the server.
+  patchHolding: (ticker: string, meta: HoldingMeta) =>
+    request<unknown>(`/holdings/${encodeURIComponent(ticker)}`, {
+      method: 'PATCH',
       body: JSON.stringify(meta),
     }),
 };
