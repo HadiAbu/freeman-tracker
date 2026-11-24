@@ -1,0 +1,8 @@
+fastapi==0.163.1
+uvicorn[standard]==0.54.0
+pydantic-settings==2.16.3
+libsql==0.1.11
+httpx==0.28.1
+openai==3.52.0
+# dev / tests
+pytest==9.2.0

@@ -4,7 +4,7 @@ A personal portfolio tracker for stocks: log buys and sells, see allocation, val
 gain/loss, and keep a watchlist with target prices. Prices are entered by hand for now.
 
 Expo SDK 58 · React Native · Expo Router · TanStack Query · react-native-gifted-charts.
-The backend is a separate FastAPI + Turso service (`freeman-api`, in the parent `CLaude` repo).
+The backend is a FastAPI + Turso service in this repo, in [`api/`](api/README.md).
 
 ## Screens
 
@@ -20,12 +20,12 @@ asset class (these drive the Sector and Asset class views).
 
 ## Run it locally
 
-1. Start the API (see `freeman-api/README.md`). For a phone on your network use `--host 0.0.0.0`.
+1. Start the API (see `api/README.md`). For a phone on your network use `--host 0.0.0.0`.
 2. Create `.env.local` (git-ignored) in this folder:
 
    ```
    EXPO_PUBLIC_API_URL=http://<your-LAN-IP>:8000
-   EXPO_PUBLIC_API_KEY=<the API_KEY from freeman-api/.env>
+   EXPO_PUBLIC_API_KEY=<the API_KEY from api/.env>
    ```
 
    `EXPO_PUBLIC_*` values are bundled into the app, so anyone with the app can read the key. That is
@@ -142,7 +142,7 @@ eas build --profile development --platform android
 
 ## Phases
 
-1. API: trades, watchlist, prices, derived portfolio math (`freeman-api`)
+1. API: trades, watchlist, prices, derived portfolio math (`api/`)
 2. App shell, trades list, add-trade flow
 3. Charts, holdings list, position detail
 4. Watchlist and manual price marks

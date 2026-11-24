@@ -5,7 +5,7 @@ const expoConfig = require('eslint-config-expo/flat');
 module.exports = defineConfig([
   expoConfig,
   {
-    ignores: ['dist/*'],
+    ignores: ['dist/*', 'dist-e2e/*', 'api/**'],
   },
   {
     // jest.mock factories cannot use imports, and jest.isolateModules needs require().
