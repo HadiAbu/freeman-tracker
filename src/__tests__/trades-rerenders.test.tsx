@@ -42,7 +42,6 @@ test('a parent state change that does not touch the data leaves the rows alone',
   const settled = mockRowRenders.mock.calls.length;
   await fireEvent.press(screen.getByRole('button', { name: 'Dismiss' })); // clears the banner: parent re-renders
   const extra = mockRowRenders.mock.calls.length - settled;
-  // eslint-disable-next-line no-console
   console.log(`row renders: ${settled} before dismiss, +${extra} caused by the parent re-render (5 rows)`);
   expect(extra).toBe(0);
 });
