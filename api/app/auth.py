@@ -1,20 +1,25 @@
-import secrets
-
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.config import Settings, get_settings
+from app.security import decode_access_token
+
+_bearer = HTTPBearer(auto_error=False)
+_CHALLENGE = {"WWW-Authenticate": "Bearer"}
 
 
-def require_api_key(
-    x_api_key: str | None = Header(default=None),
+def current_user_id(
+    creds: HTTPAuthorizationCredentials | None = Depends(_bearer),
     settings: Settings = Depends(get_settings),
-) -> None:
-    if not settings.api_key:
-        # Fail closed: an unconfigured server must not be open.
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "API key not configured")
-    # Compare bytes: compare_digest raises TypeError on non-ASCII str, which would turn a
-    # malformed header (Starlette decodes headers as latin-1) into a 500 instead of a 401.
-    if x_api_key is None or not secrets.compare_digest(
-        x_api_key.encode("utf-8"), settings.api_key.encode("utf-8")
-    ):
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or missing API key")
+) -> int:
+    """The signed-in user's id, from a valid access token. Every data route depends on this, and
+    every query it runs is filtered by the id it returns: it is the only source of user_id."""
+    if not settings.jwt_secret:
+        # Fail closed: a server without a signing secret must not accept anything.
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Authentication is not configured")
+    if creds is None or creds.scheme.lower() != "bearer":
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Not signed in", headers=_CHALLENGE)
+    user_id = decode_access_token(creds.credentials, settings.jwt_secret)
+    if user_id is None:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Session expired", headers=_CHALLENGE)
+    return user_id

@@ -19,7 +19,26 @@ def init_schema(conn) -> None:
     for stmt in sql.split(";"):
         if stmt.strip():
             conn.execute(stmt)
+    _migrate(conn)
     conn.commit()
+
+
+def _columns(conn, table: str) -> set[str]:
+    return {r[1] for r in conn.execute(f"PRAGMA table_info({table})").fetchall()}
+
+
+def _migrate(conn) -> None:
+    """Brings a database created by an older version up to date. Safe to run every startup.
+
+    Version 1 (single user) had no owner on price marks. Every mark that exists then was entered
+    by the one user, who is account id 1: the first account created on that database inherits
+    the data. Marks added later by a market-data provider have user_id NULL and are shared.
+    """
+    if "user_id" not in _columns(conn, "prices"):
+        conn.execute("ALTER TABLE prices ADD COLUMN user_id INTEGER")
+        conn.execute("UPDATE prices SET user_id = 1")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_prices_ticker_asof ON prices (ticker, as_of)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_prices_user ON prices (user_id, ticker, as_of)")
 
 
 def get_conn() -> Iterator[Any]:

@@ -11,7 +11,7 @@ def test_holding_for_returns_the_open_position(client):
     from app.db import connect
 
     seed(client)
-    h = ledger.holding_for(connect(client.db_path), "AAPL")
+    h = ledger.holding_for(connect(client.db_path), 1, "AAPL")
     assert h is not None and h.shares == 10 and h.name == "Apple Inc."
 
 
@@ -19,7 +19,7 @@ def test_holding_for_is_none_when_not_held(client):
     from app.db import connect
 
     seed(client)
-    assert ledger.holding_for(connect(client.db_path), "NVDA") is None
+    assert ledger.holding_for(connect(client.db_path), 1, "NVDA") is None
 
 
 def test_watchlist_name(client):
@@ -27,5 +27,5 @@ def test_watchlist_name(client):
 
     seed(client)
     conn = connect(client.db_path)
-    assert ledger.watchlist_name(conn, "NVDA") == "NVIDIA"
-    assert ledger.watchlist_name(conn, "MSFT") is None
+    assert ledger.watchlist_name(conn, 1, "NVDA") == "NVIDIA"
+    assert ledger.watchlist_name(conn, 1, "MSFT") is None

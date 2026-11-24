@@ -10,6 +10,7 @@ from app.analysis.llm import LlmUnavailable
 from app.analysis import service
 from app.analysis.schema import CasePoint, LlmAnalysis
 from app.config import Settings, get_settings
+from tests.conftest import make_settings
 from app.db import connect
 from app.news.models import NewsItem
 from app.news.normalize import item_id
@@ -108,7 +109,7 @@ def test_refresh_too_soon_is_429_with_retry_after(client, fakes):
 
 
 def test_daily_cap_is_429(client, fakes):
-    main.app.dependency_overrides[get_settings] = lambda: Settings(api_key="test-key", analysis_daily_cap=1, _env_file=None)
+    main.app.dependency_overrides[get_settings] = lambda: make_settings(analysis_daily_cap=1)
     assert post(client).status_code == 200
     r = client.post("/analysis", json={"ticker": "MSFT"})
     assert r.status_code == 429 and "Retry-After" in r.headers
@@ -133,17 +134,17 @@ def test_model_failure_is_502_with_a_safe_message(client, fakes):
 
 def test_unconfigured_server_is_503_naming_only_the_missing_settings(client):
     # no key values at all, and the real .env is ignored: nothing here can reach a provider
-    main.app.dependency_overrides[get_settings] = lambda: Settings(api_key="test-key", _env_file=None)
+    main.app.dependency_overrides[get_settings] = lambda: make_settings()
     r = post(client)
     assert r.status_code == 503
     detail = r.json()["detail"]
     assert "OPENAI_API_KEY" in detail and "OPENAI_MODEL" in detail and "FINNHUB_API_KEY" in detail
 
 
-def test_invalid_ticker_is_422_and_auth_is_required(client, fakes):
+def test_invalid_ticker_is_422_and_auth_is_required(client, anon, fakes):
     assert client.post("/analysis", json={"ticker": "A B"}).status_code == 422
-    assert client.post("/analysis", json={"ticker": "AAPL"}, headers={"X-API-Key": ""}).status_code == 401
-    assert client.get("/analysis/AAPL", headers={"X-API-Key": ""}).status_code == 401
+    assert anon.post("/analysis", json={"ticker": "AAPL"}).status_code == 401
+    assert anon.get("/analysis/AAPL").status_code == 401
 
 
 def test_prompts_and_positions_are_never_logged(client, fakes, caplog):
@@ -173,7 +174,7 @@ def test_unexpected_exception_is_a_constant_500_that_leaks_nothing(client, fakes
 def test_inconsistent_ledger_still_passes_through_as_409(client, fakes):
     conn = connect(client.db_path)
     conn.execute(
-        "INSERT INTO trades (ticker, side, shares, price, fee, traded_at) VALUES ('AAPL', 'sell', 5, 100, 0, '2026-01-01')"
+        "INSERT INTO trades (user_id, ticker, side, shares, price, fee, traded_at) VALUES (1, 'AAPL', 'sell', 5, 100, 0, '2026-01-01')"
     )
     conn.commit()
     assert post(client).status_code == 409

@@ -13,20 +13,21 @@ def sell(client, ticker="AAPL", shares=5, price=120, day="2026-01-02"):
 
 
 # ---------- auth ----------
-def test_health_is_public(client):
-    assert client.get("/health", headers={"X-API-Key": ""}).status_code == 200
+def test_health_is_public(anon):
+    assert anon.get("/health").status_code == 200
 
 
-def test_missing_or_wrong_key_is_401(client):
-    assert client.get("/trades", headers={"X-API-Key": ""}).status_code == 401
-    assert client.get("/trades", headers={"X-API-Key": "nope"}).status_code == 401
+def test_missing_or_bad_token_is_401(anon):
+    assert anon.get("/trades").status_code == 401
+    assert anon.get("/trades", headers={"Authorization": "Bearer nope"}).status_code == 401
+    assert anon.get("/trades", headers={"Authorization": "Basic abc"}).status_code == 401
 
 
 def test_unconfigured_server_fails_closed(client):
     from app import main
     from app.config import Settings, get_settings
 
-    main.app.dependency_overrides[get_settings] = lambda: Settings(api_key="")
+    main.app.dependency_overrides[get_settings] = lambda: Settings(jwt_secret="", _env_file=None)
     assert client.get("/trades").status_code == 503
 
 
@@ -136,9 +137,9 @@ def test_empty_portfolio(client):
 
 
 # ---------- regression: review findings ----------
-def test_non_ascii_api_key_is_401_not_500(client):
+def test_non_ascii_token_is_401_not_500(anon):
     # httpx refuses a non-ASCII str header, so send raw bytes as a hostile client could.
-    r = client.get("/trades", headers={"X-API-Key": b"caf\xe9"})
+    r = anon.get("/trades", headers={"Authorization": b"Bearer caf\xe9"})
     assert r.status_code == 401
 
 
@@ -161,8 +162,8 @@ def test_inconsistent_ledger_is_a_clear_409_on_reads(client):
     # Corrupt the ledger directly (bypassing the API's oversell check)
     db = connect(client.db_path)
     db.execute(
-        "INSERT INTO trades (ticker, side, shares, price, fee, traded_at)"
-        " VALUES ('AAPL', 'sell', 50, 1, 0, '2026-02-01')"
+        "INSERT INTO trades (user_id, ticker, side, shares, price, fee, traded_at)"
+        " VALUES (1, 'AAPL', 'sell', 50, 1, 0, '2026-02-01')"
     )
     db.commit()
     for path in ("/portfolio/summary", "/portfolio/allocation", "/portfolio/history"):

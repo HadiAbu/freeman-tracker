@@ -8,7 +8,7 @@ from app.analysis import service, store
 from app.analysis.llm import LlmClient, OpenAiLlm
 from app.analysis.prompt import PositionInfo
 from app.analysis.schema import _TICKER, Analysis, AnalysisRequest
-from app.auth import require_api_key
+from app.auth import current_user_id
 from app.config import Settings, get_settings
 from app.db import get_conn
 from app.news.finnhub import FinnhubClient
@@ -17,7 +17,7 @@ from app.news.service import NewsGatherer, gather_news
 
 log = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/analysis", tags=["analysis"], dependencies=[Depends(require_api_key)])
+router = APIRouter(prefix="/analysis", tags=["analysis"])
 
 
 def utcnow() -> datetime:
@@ -36,7 +36,7 @@ def _require_config(settings: Settings) -> None:
         if not value
     ]
     if missing:
-        raise HTTPException(503, f"Analysis is not configured: set {', '.join(missing)} in freeman-api/.env.")
+        raise HTTPException(503, f"Analysis is not configured: set {', '.join(missing)} in api/.env.")
 
 
 def get_news_gatherer(settings: Settings = Depends(get_settings)) -> NewsGatherer:
@@ -58,13 +58,14 @@ def get_llm(settings: Settings = Depends(get_settings)) -> LlmClient:
 @router.post("", response_model=Analysis)
 def create_analysis(
     body: AnalysisRequest,
+    user_id: int = Depends(current_user_id),
     conn=Depends(get_conn),
     settings: Settings = Depends(get_settings),
     news: NewsGatherer = Depends(get_news_gatherer),
     llm: LlmClient = Depends(get_llm),
 ):
     try:
-        holding = ledger.holding_for(conn, body.ticker)
+        holding = ledger.holding_for(conn, user_id, body.ticker)
         position = (
             PositionInfo(holding.shares, holding.avg_cost, holding.price, holding.unrealized_pct)
             if holding is not None
@@ -72,8 +73,8 @@ def create_analysis(
         )
         company_name = (
             (holding.name if holding else None)
-            or (ledger.meta(conn).get(body.ticker) or {}).get("name")
-            or ledger.watchlist_name(conn, body.ticker)
+            or (ledger.meta(conn, user_id).get(body.ticker) or {}).get("name")
+            or ledger.watchlist_name(conn, user_id, body.ticker)
         )
         deps = service.Deps(
             news=news, llm=llm, now=utcnow,
@@ -82,7 +83,7 @@ def create_analysis(
             daily_cap=settings.analysis_daily_cap,
         )
         return service.run_analysis(
-            conn, ticker=body.ticker, refresh=body.refresh, personalize=body.personalize,
+            conn, user_id=user_id, ticker=body.ticker, refresh=body.refresh, personalize=body.personalize,
             position=position, company_name=company_name, deps=deps,
         )
     except service.AnalysisError as e:
@@ -97,12 +98,14 @@ def create_analysis(
 
 
 @router.get("/{ticker}", response_model=Analysis)
-def latest_analysis(ticker: str, conn=Depends(get_conn)):
+def latest_analysis(
+    ticker: str, user_id: int = Depends(current_user_id), conn=Depends(get_conn)
+):
     """The newest stored analysis for a ticker (even if stale). Never runs the pipeline."""
     t = ticker.strip().upper()
     if not _TICKER.match(t):
         raise HTTPException(422, "ticker must be 1-15 letters, digits, '.' or '-'")
-    found = store.get_latest(conn, t)
+    found = store.get_latest(conn, user_id, t)
     if found is None:
         raise HTTPException(404, "No analysis yet for this ticker.")
     return found

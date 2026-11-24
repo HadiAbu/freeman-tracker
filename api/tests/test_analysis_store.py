@@ -22,41 +22,41 @@ def test_position_hash_is_stable_and_changes_with_the_position():
 
 
 def test_save_then_get_fresh_marks_the_result_cached(db_conn):
-    store.save(db_conn, analysis(), ph="none", personalized=False, expires_at=NOW + timedelta(hours=6))
-    got = store.get_fresh(db_conn, "AAPL", "none", False, NOW + timedelta(hours=1))
+    store.save(db_conn, 1, analysis(), ph="none", personalized=False, expires_at=NOW + timedelta(hours=6))
+    got = store.get_fresh(db_conn, 1, "AAPL", "none", False, NOW + timedelta(hours=1))
     assert got is not None and got.cached is True and got.ticker == "AAPL"
 
 
 def test_expired_entries_are_not_fresh_but_are_still_the_latest(db_conn):
-    store.save(db_conn, analysis(), ph="none", personalized=False, expires_at=NOW + timedelta(hours=6))
+    store.save(db_conn, 1, analysis(), ph="none", personalized=False, expires_at=NOW + timedelta(hours=6))
     later = NOW + timedelta(hours=7)
-    assert store.get_fresh(db_conn, "AAPL", "none", False, later) is None
-    assert store.get_latest(db_conn, "AAPL") is not None
+    assert store.get_fresh(db_conn, 1, "AAPL", "none", False, later) is None
+    assert store.get_latest(db_conn, 1, "AAPL") is not None
 
 
 def test_cache_key_includes_position_hash_and_personalization(db_conn):
-    store.save(db_conn, analysis(personalized=True), ph="abc", personalized=True, expires_at=NOW + timedelta(hours=6))
-    assert store.get_fresh(db_conn, "AAPL", "abc", True, NOW) is not None
-    assert store.get_fresh(db_conn, "AAPL", "other", True, NOW) is None
-    assert store.get_fresh(db_conn, "AAPL", "none", False, NOW) is None
+    store.save(db_conn, 1, analysis(personalized=True), ph="abc", personalized=True, expires_at=NOW + timedelta(hours=6))
+    assert store.get_fresh(db_conn, 1, "AAPL", "abc", True, NOW) is not None
+    assert store.get_fresh(db_conn, 1, "AAPL", "other", True, NOW) is None
+    assert store.get_fresh(db_conn, 1, "AAPL", "none", False, NOW) is None
 
 
 def test_get_latest_returns_the_newest_and_none_for_unknown(db_conn):
-    store.save(db_conn, analysis(when=NOW, stance="hold"), ph="none", personalized=False, expires_at=NOW + timedelta(hours=6))
-    store.save(db_conn, analysis(when=NOW + timedelta(hours=1), stance="sell"), ph="none", personalized=False,
+    store.save(db_conn, 1, analysis(when=NOW, stance="hold"), ph="none", personalized=False, expires_at=NOW + timedelta(hours=6))
+    store.save(db_conn, 1, analysis(when=NOW + timedelta(hours=1), stance="sell"), ph="none", personalized=False,
                expires_at=NOW + timedelta(hours=7))
-    assert store.get_latest(db_conn, "AAPL").stance == "sell"
-    assert store.get_latest(db_conn, "MSFT") is None
+    assert store.get_latest(db_conn, 1, "AAPL").stance == "sell"
+    assert store.get_latest(db_conn, 1, "MSFT") is None
 
 
 def test_last_created_and_count_since(db_conn):
-    assert store.last_created(db_conn, "AAPL", "none", False) is None
-    store.save(db_conn, analysis(when=NOW), ph="none", personalized=False, expires_at=NOW + timedelta(hours=6))
-    store.save(db_conn, analysis("MSFT", when=NOW - timedelta(days=2)), ph="none", personalized=False,
+    assert store.last_created(db_conn, 1, "AAPL", "none", False) is None
+    store.save(db_conn, 1, analysis(when=NOW), ph="none", personalized=False, expires_at=NOW + timedelta(hours=6))
+    store.save(db_conn, 1, analysis("MSFT", when=NOW - timedelta(days=2)), ph="none", personalized=False,
                expires_at=NOW + timedelta(hours=6))
-    assert store.last_created(db_conn, "AAPL", "none", False) == NOW
-    assert store.count_since(db_conn, store.start_of_utc_day(NOW)) == 1
-    assert store.count_since(db_conn, NOW - timedelta(days=3)) == 2
+    assert store.last_created(db_conn, 1, "AAPL", "none", False) == NOW
+    assert store.count_since(db_conn, 1, store.start_of_utc_day(NOW)) == 1
+    assert store.count_since(db_conn, 1, NOW - timedelta(days=3)) == 2
 
 
 def test_refresh_wait_and_day_boundaries():
@@ -95,5 +95,5 @@ def test_save_rejects_naive_generated_at_and_writes_nothing(db_conn):
 
     naive = analysis(when=datetime(2026, 11, 17, 12, 0))  # naive: no tzinfo
     with pytest.raises(ValueError):
-        store.save(db_conn, naive, ph="none", personalized=False, expires_at=NOW + timedelta(hours=6))
-    assert store.count_since(db_conn, datetime(2000, 1, 1, tzinfo=timezone.utc)) == 0
+        store.save(db_conn, 1, naive, ph="none", personalized=False, expires_at=NOW + timedelta(hours=6))
+    assert store.count_since(db_conn, 1, datetime(2000, 1, 1, tzinfo=timezone.utc)) == 0

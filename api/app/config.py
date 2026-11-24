@@ -9,8 +9,17 @@ class Settings(BaseSettings):
     # Turso: libsql://<db>-<org>.turso.io  (or a local file path for dev/tests)
     turso_database_url: str = "freeman-dev.db"
     turso_auth_token: str = ""
-    # Single shared secret until real accounts exist. Required.
-    api_key: str = ""
+    # Signs access tokens (HS256). Required: with it empty every protected route answers 503
+    # (fail closed). Use a long random value, e.g. python -c "import secrets; print(secrets.token_urlsafe(48))"
+    jwt_secret: str = ""
+    access_token_minutes: int = 15
+    refresh_token_days: int = 30
+    # Anyone can POST /auth/register when true. Off by default; create accounts with
+    # `python -m scripts.create_user` instead.
+    allow_registration: bool = False
+    # Failed logins allowed per (email, client address) inside the window before a 429.
+    login_max_failures: int = 5
+    login_window_seconds: int = 900
     # Comma-separated origins for the web build; native apps ignore CORS.
     cors_origins: str = ""
     # --- news analysis (all keys server-side only) ---

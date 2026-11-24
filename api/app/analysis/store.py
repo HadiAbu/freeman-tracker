@@ -30,15 +30,15 @@ def position_hash(position: PositionInfo | None) -> str:
     return hashlib.sha1(raw.encode()).hexdigest()[:12]
 
 
-def save(conn, analysis: Analysis, *, ph: str, personalized: bool, expires_at: datetime) -> None:
+def save(conn, user_id: int, analysis: Analysis, *, ph: str, personalized: bool, expires_at: datetime) -> None:
     # Convert both timestamps before touching the database, so a bad value writes nothing.
     created = iso(analysis.generated_at)
     expires = iso(expires_at)
     conn.execute(
-        "INSERT INTO analyses (ticker, position_hash, personalized, created_at, expires_at, model, payload)"
-        " VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO analyses (user_id, ticker, position_hash, personalized, created_at, expires_at, model, payload)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         (
-            analysis.ticker, ph, 1 if personalized else 0, created,
+            user_id, analysis.ticker, ph, 1 if personalized else 0, created,
             expires, analysis.model, analysis.model_dump_json(),
         ),
     )
@@ -51,34 +51,35 @@ def _load(row: dict | None) -> Analysis | None:
     return Analysis.model_validate_json(row["payload"]).model_copy(update={"cached": True})
 
 
-def get_fresh(conn, ticker: str, ph: str, personalized: bool, now: datetime) -> Analysis | None:
+def get_fresh(conn, user_id: int, ticker: str, ph: str, personalized: bool, now: datetime) -> Analysis | None:
     return _load(one(conn.execute(
-        "SELECT payload FROM analyses WHERE user_id = 1 AND ticker = ? AND position_hash = ?"
+        "SELECT payload FROM analyses WHERE user_id = ? AND ticker = ? AND position_hash = ?"
         " AND personalized = ? AND expires_at > ? ORDER BY created_at DESC, id DESC LIMIT 1",
-        (ticker, ph, 1 if personalized else 0, iso(now)),
+        (user_id, ticker, ph, 1 if personalized else 0, iso(now)),
     )))
 
 
-def get_latest(conn, ticker: str) -> Analysis | None:
+def get_latest(conn, user_id: int, ticker: str) -> Analysis | None:
     return _load(one(conn.execute(
-        "SELECT payload FROM analyses WHERE user_id = 1 AND ticker = ?"
+        "SELECT payload FROM analyses WHERE user_id = ? AND ticker = ?"
         " ORDER BY created_at DESC, id DESC LIMIT 1",
-        (ticker,),
+        (user_id, ticker),
     )))
 
 
-def last_created(conn, ticker: str, ph: str, personalized: bool) -> datetime | None:
+def last_created(conn, user_id: int, ticker: str, ph: str, personalized: bool) -> datetime | None:
     row = one(conn.execute(
-        "SELECT created_at FROM analyses WHERE user_id = 1 AND ticker = ? AND position_hash = ?"
+        "SELECT created_at FROM analyses WHERE user_id = ? AND ticker = ? AND position_hash = ?"
         " AND personalized = ? ORDER BY created_at DESC, id DESC LIMIT 1",
-        (ticker, ph, 1 if personalized else 0),
+        (user_id, ticker, ph, 1 if personalized else 0),
     ))
     return _parse(row["created_at"]) if row else None
 
 
-def count_since(conn, since: datetime) -> int:
+def count_since(conn, user_id: int, since: datetime) -> int:
     row = one(conn.execute(
-        "SELECT COUNT(*) AS n FROM analyses WHERE user_id = 1 AND created_at >= ?", (iso(since),)
+        "SELECT COUNT(*) AS n FROM analyses WHERE user_id = ? AND created_at >= ?",
+        (user_id, iso(since)),
     ))
     return int(row["n"]) if row else 0
 

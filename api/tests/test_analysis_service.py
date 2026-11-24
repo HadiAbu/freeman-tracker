@@ -60,7 +60,7 @@ def deps(llm, items=ITEMS, ok=True, notes=None, clock=None, cap=30, refresh_min=
 
 
 def run(conn, d, *, refresh=False, personalize=True, position=None, ticker="AAPL"):
-    return service.run_analysis(conn, ticker=ticker, refresh=refresh, personalize=personalize,
+    return service.run_analysis(conn, user_id=1, ticker=ticker, refresh=refresh, personalize=personalize,
                                 position=position, company_name="Apple Inc", deps=d)
 
 
@@ -130,8 +130,8 @@ def test_thin_news_returns_unclear_without_calling_the_model(db_conn):
     a = run(db_conn, d)
     assert a.stance == "unclear" and llm.inputs == [] and "GDELT unavailable" in a.notes
     assert a.cached is False and a.model == "none"
-    assert store.get_latest(db_conn, "AAPL") is None
-    assert store.count_since(db_conn, store.start_of_utc_day(NOW)) == 0
+    assert store.get_latest(db_conn, 1, "AAPL") is None
+    assert store.count_since(db_conn, 1, store.start_of_utc_day(NOW)) == 0
     run(db_conn, d)
     assert calls["news"] == 2 and llm.inputs == []
 

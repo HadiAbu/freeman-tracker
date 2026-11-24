@@ -1,7 +1,31 @@
--- user_id is always 1 for now; kept so real accounts can be added later.
+-- Every user-owned table carries user_id. There is deliberately no DEFAULT: a query or insert
+-- that forgets the owner must fail, not quietly land on someone else's data. (Databases created
+-- before accounts existed keep their old DEFAULT 1; the application always passes user_id.)
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+-- Opaque refresh tokens, stored only as a SHA-256 hash. A token is single use: refreshing
+-- revokes it and issues a new one in the same family. Presenting a revoked token revokes the
+-- whole family (a stolen token was replayed).
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  family_id TEXT NOT NULL,
+  token_hash TEXT NOT NULL UNIQUE,
+  created_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  revoked_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_refresh_user ON refresh_tokens (user_id);
+CREATE INDEX IF NOT EXISTS idx_refresh_family ON refresh_tokens (family_id);
+
 CREATE TABLE IF NOT EXISTS holdings (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL DEFAULT 1,
+  user_id INTEGER NOT NULL,
   ticker TEXT NOT NULL,
   name TEXT,
   sector TEXT,
@@ -11,7 +35,7 @@ CREATE TABLE IF NOT EXISTS holdings (
 
 CREATE TABLE IF NOT EXISTS trades (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL DEFAULT 1,
+  user_id INTEGER NOT NULL,
   ticker TEXT NOT NULL,
   side TEXT NOT NULL CHECK (side IN ('buy', 'sell')),
   shares REAL NOT NULL CHECK (shares > 0),
@@ -24,7 +48,7 @@ CREATE INDEX IF NOT EXISTS idx_trades_user_ticker ON trades (user_id, ticker, tr
 
 CREATE TABLE IF NOT EXISTS watchlist (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL DEFAULT 1,
+  user_id INTEGER NOT NULL,
   ticker TEXT NOT NULL,
   name TEXT,
   target_price REAL,
@@ -32,20 +56,22 @@ CREATE TABLE IF NOT EXISTS watchlist (
   UNIQUE (user_id, ticker)
 );
 
--- Price marks. Manual now; a provider can insert rows with another `source`.
+-- Price marks. user_id is the owner of a manual mark; NULL means a market-data mark that every
+-- user sees. (The idx_prices_* indexes are created in code, after the column is guaranteed to
+-- exist on databases that predate it.)
 CREATE TABLE IF NOT EXISTS prices (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER,
   ticker TEXT NOT NULL,
   price REAL NOT NULL CHECK (price >= 0),
   as_of TEXT NOT NULL,
   source TEXT NOT NULL DEFAULT 'manual'
 );
-CREATE INDEX IF NOT EXISTS idx_prices_ticker_asof ON prices (ticker, as_of);
 
--- Cached news analyses. Cache key: (ticker, position_hash, personalized).
+-- Cached news analyses. Cache key: (user_id, ticker, position_hash, personalized).
 CREATE TABLE IF NOT EXISTS analyses (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL DEFAULT 1,
+  user_id INTEGER NOT NULL,
   ticker TEXT NOT NULL,
   position_hash TEXT NOT NULL,
   personalized INTEGER NOT NULL DEFAULT 0,

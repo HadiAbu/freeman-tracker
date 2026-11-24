@@ -1,14 +1,15 @@
 # freeman-api
 
-FastAPI + Turso (libSQL) backend for the Freeman portfolio tracker. Single user for now,
-protected by a shared `X-API-Key`.
+FastAPI + Turso (libSQL) backend for the Freeman portfolio tracker. Multi-user: each account sees
+only its own trades, watchlist, holdings, manual prices and analyses.
 
 ## Run
 
 ```bash
 python -m venv .venv
 .venv/Scripts/pip install -r requirements.txt      # Windows; use .venv/bin/pip elsewhere
-cp .env.example .env                               # then set API_KEY
+cp .env.example .env                               # then set JWT_SECRET
+.venv/Scripts/python -m scripts.create_user you@example.com   # make your account
 .venv/Scripts/python -m uvicorn app.main:app --reload --host 0.0.0.0
 ```
 
@@ -21,7 +22,26 @@ A phone on the same network reaches it at `http://<LAN-IP>:8000`.
 .venv/Scripts/python -m pytest -q
 ```
 
-## Endpoints (all but `/health` need `X-API-Key`)
+## Accounts and sign-in
+
+Send `Authorization: Bearer <access_token>` on every request except `/health` and `/auth/*`.
+
+| | |
+|---|---|
+| `POST /auth/login` `{email, password}` | Returns `access_token` (15 min), `refresh_token` (30 days, single use), `expires_in`. 401 for any wrong credential, with one message. 429 after 5 failures per account or address in 15 minutes (`Retry-After`). |
+| `POST /auth/refresh` `{refresh_token}` | Swaps a refresh token for a new pair. The old one stops working. Presenting a used token again ends every session in its family. |
+| `POST /auth/logout` `{refresh_token}` | Ends that session. Always 204. |
+| `GET /auth/me` | The signed-in account. |
+| `POST /auth/register` | Only when `ALLOW_REGISTRATION=true`; 403 otherwise. Prefer `scripts.create_user`. |
+
+Passwords are hashed with argon2id. Refresh tokens are stored only as SHA-256 hashes. With
+`JWT_SECRET` unset the server fails closed (503).
+
+**Upgrading a database from the single-user version.** All existing data is owned by user id 1, and
+existing price marks are assigned to id 1 on startup. The first account you create gets id 1 and so
+inherits everything. Create it before enabling registration.
+
+## Endpoints (all but `/health` and `/auth/*` need a bearer token)
 
 | | |
 |---|---|

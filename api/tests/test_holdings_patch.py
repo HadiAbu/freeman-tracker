@@ -39,8 +39,9 @@ def test_patch_empty_body_is_422_and_creates_nothing(client):
     assert row["name"] is None
 
 
-def test_patch_requires_auth(client):
-    r = client.patch("/holdings/AAPL", json={"sector": "Tech"}, headers={"X-API-Key": ""})
-    assert r.status_code == 401
-    r = client.patch("/holdings/AAPL", json={"sector": "Tech"}, headers={"X-API-Key": "nope"})
+def test_patch_requires_auth(anon):
+    assert anon.patch("/holdings/AAPL", json={"sector": "Tech"}).status_code == 401
+    r = anon.patch(
+        "/holdings/AAPL", json={"sector": "Tech"}, headers={"Authorization": "Bearer nope"}
+    )
     assert r.status_code == 401
