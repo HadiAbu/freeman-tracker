@@ -14,6 +14,7 @@ import type {
   Trade,
   WatchItem,
 } from '@/types';
+import { recordApiFailure } from '@/lib/monitoring';
 
 // EXPO_PUBLIC_* values are inlined into the JS bundle at build time, so the key is
 // readable by anyone who has the app. That is acceptable for a personal, single-user
@@ -66,6 +67,7 @@ async function request<T>(path: string, init: RequestInit = {}, timeoutMs = 15_0
     }
 
     if (!res.ok) {
+      recordApiFailure(path.split('?')[0], res.status);
       let message = `Request failed (${res.status})`;
       try {
         message = detailToMessage((await res.json()).detail) ?? message;
