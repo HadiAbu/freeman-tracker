@@ -12,6 +12,7 @@
     "test:watch": "jest --watchAll",
     "test:ci": "jest --ci --coverage",
     "typecheck": "tsc --noEmit",
+    "perf:bundle": "node scripts/perf-bundle.mjs",
     "e2e": "maestro test .maestro"
   },
   "dependencies": {

@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
@@ -27,6 +27,10 @@ function confirmDelete(trade: Trade, onConfirm: () => void) {
   confirmDestructive('Delete trade?', message, 'Delete', onConfirm);
 }
 
+function Separator() {
+  return <View style={styles.separator} />;
+}
+
 export default function TradesScreen() {
   const router = useRouter();
   // remembered between launches (null is "All")
@@ -35,22 +39,31 @@ export default function TradesScreen() {
   const side: Side | undefined = savedSide ?? undefined;
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const trades = useTradePages(side);
-  const remove = useDeleteTrade();
+  const { mutate: removeTrade } = useDeleteTrade();
 
   const items = trades.data?.pages.flat() ?? [];
 
-  const onDelete = (trade: Trade) =>
-    confirmDelete(trade, () => {
-      setDeleteError(null);
-      remove.mutate(trade.id, {
-        onSuccess: () => haptic('success'),
-        onError: (e) => {
-          haptic('error');
-          // e.g. 409: deleting a buy that a later sell depends on
-          setDeleteError(e.message);
-        },
-      });
-    });
+  // Stable identity, so memoized rows are not redrawn every time this screen updates.
+  const onDelete = useCallback(
+    (trade: Trade) =>
+      confirmDelete(trade, () => {
+        setDeleteError(null);
+        removeTrade(trade.id, {
+          onSuccess: () => haptic('success'),
+          onError: (e) => {
+            haptic('error');
+            // e.g. 409: deleting a buy that a later sell depends on
+            setDeleteError(e.message);
+          },
+        });
+      }),
+    [removeTrade],
+  );
+
+  const renderItem = useCallback(
+    ({ item }: { item: Trade }) => <TradeRow trade={item} onLongPress={onDelete} />,
+    [onDelete],
+  );
 
   const loadMore = () => {
     if (trades.hasNextPage && !trades.isFetchingNextPage) trades.fetchNextPage();
@@ -96,8 +109,8 @@ export default function TradesScreen() {
         <FlatList
           data={items}
           keyExtractor={(t) => String(t.id)}
-          renderItem={({ item }) => <TradeRow trade={item} onLongPress={onDelete} />}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          renderItem={renderItem}
+          ItemSeparatorComponent={Separator}
           ListEmptyComponent={
             <EmptyState title="No trades yet" hint="Tap “Add trade” to log your first buy or sell." />
           }

@@ -10,7 +10,8 @@ import type { Trade } from '@/types';
 
 type Props = { trade: Trade; onLongPress?: (trade: Trade) => void };
 
-export function TradeRow({ trade, onLongPress }: Props) {
+// memo: a list of these should only redraw the rows whose trade (or handler) actually changed.
+export const TradeRow = React.memo(function TradeRow({ trade, onLongPress }: Props) {
   const money = useMoney();
   const buy = trade.side === 'buy';
   const total = trade.shares * trade.price + (buy ? trade.fee : -trade.fee);
@@ -40,7 +41,7 @@ export function TradeRow({ trade, onLongPress }: Props) {
       </ThemedView>
     </Pressable>
   );
-}
+});
 
 const styles = StyleSheet.create({
   row: {

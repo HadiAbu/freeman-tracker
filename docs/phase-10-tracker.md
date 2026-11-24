@@ -9,7 +9,8 @@ Status key: `[ ]` not started, `[~]` in progress, `[x]` done and verified, `[-]`
 
 - [x] Tracker and phase branch.
 - [x] Item 2 (error monitoring) core, see below.
-- Next: item 8 (performance evidence), then 1 (auth), then 6 (market prices).
+- [~] Item 8 (performance evidence): script, baseline and Trades fix done; cold start and Watchlist open.
+- Next: item 1 (auth), then 6 (market prices).
   Order is smallest and least risky first. Auth is the biggest change and touches both repos, so it goes
   after the quick wins.
 
@@ -39,14 +40,14 @@ Nice to have:
 
 ### 8. Performance evidence
 Must have:
-- [ ] Baseline numbers recorded in `docs/performance.md`: bundle size (per platform export), cold start, Trades list scroll behaviour.
-- [ ] Trades and holdings lists verified as virtualized with memoized rows; fix if not.
-- [ ] A repeatable script (`npm run perf:bundle`) so the numbers can be regenerated.
-- [ ] Before/after table for every change made.
+- [~] Baseline numbers recorded in `docs/performance.md`: bundle size done; cold start and scroll frame rate need a device (not done).
+- [~] Trades list fixed (rows were all redrawing). Watchlist has the same issue, unfixed. Holdings are in a ScrollView, not virtualized.
+- [x] A repeatable script (`npm run perf:bundle`) so the numbers can be regenerated.
+- [x] Before/after table for every change made (so far: the Trades rows).
 
 Nice to have:
 - [ ] Bundle-size check in CI that fails on a large regression.
-- [ ] Re-render counts for the main screens from the React Profiler.
+- [~] Re-render counts: Trades covered by a test; other screens not.
 - [ ] Swap to `FlashList` only if the numbers justify it.
 
 ### 1. Authentication
@@ -112,3 +113,4 @@ Nice to have:
 |---|---|
 | 2026-11-24 | Created branch and this tracker |
 | 2026-11-24 | Item 2: `@sentry/react-native` added, `src/lib/monitoring.ts` (inert without `EXPO_PUBLIC_SENTRY_DSN`, scrubs money fields, tags channel/update ID), root `ErrorBoundary`, API-failure breadcrumbs. tsc, lint and 263 tests pass. **Not yet verified on a device/release build** (needs a DSN and a new native build). Source maps and the rollout-watching doc step are still open. |
+| 2026-11-24 | Item 8: `scripts/perf-bundle.mjs`, `docs/performance.md`, baseline bundle ~7 MB per platform. Trades rows redrew 5 of 5 on an unrelated update, now 0 (`React.memo`, `useCallback`, hoisted separator) with a regression test. tsc, lint and full tests pass. |
