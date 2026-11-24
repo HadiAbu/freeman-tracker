@@ -9,6 +9,7 @@ import type {
   NewTrade,
   NewWatch,
   PortfolioSummary,
+  PriceRefreshResult,
   PricePoint,
   Side,
   Trade,
@@ -151,6 +152,9 @@ export const api = {
   addWatch: (item: NewWatch) =>
     request<WatchItem>('/watchlist', { method: 'POST', body: JSON.stringify(item) }),
   deleteWatch: (id: number) => request<void>(`/watchlist/${id}`, { method: 'DELETE' }),
+  // The server stops asking the provider after 20 s, so allow a little longer than that.
+  refreshPrices: () =>
+    request<PriceRefreshResult>('/prices/refresh', { method: 'POST' }, 30_000),
   addPrice: (p: NewPrice) =>
     request<PricePoint>('/prices', { method: 'POST', body: JSON.stringify(p) }),
   // A news analysis can take a while (news fetch + model call), so allow 90 seconds.

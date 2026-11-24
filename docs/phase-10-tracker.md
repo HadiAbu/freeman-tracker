@@ -11,7 +11,8 @@ Status key: `[ ]` not started, `[~]` in progress, `[x]` done and verified, `[-]`
 - [x] Item 2 (error monitoring) core, see below.
 - [~] Item 8 (performance evidence): script, baseline and Trades fix done; cold start and Watchlist open.
 - [~] Item 1 (auth), multi-user: backend and app done and tested; needs a device run. See below.
-- Next: item 6 (market prices).
+- [~] Item 6 (market prices): backend and app done and tested; one live Finnhub quote verified. Needs a device run.
+- Next: run the app on a device against the real server, then merge decisions (see Open questions).
   Order is smallest and least risky first. Auth is the biggest change and touches both repos, so it goes
   after the quick wins.
 
@@ -79,19 +80,26 @@ Nice to have:
 - [ ] Per-user cap on daily analyses is per account; add a global cap if the OpenAI bill matters.
 
 ### 6. Automatic market prices
+Provider: Finnhub free tier (already used for news; same `FINNHUB_API_KEY`).
+
 Must have:
-- [ ] Backend: price provider behind an interface (Finnhub is already a dependency for news), with a short cache and rate-limit handling.
-- [ ] Backend: refresh endpoint that stores fetched prices as price marks tagged with their source and time.
-- [ ] App: refresh on pull-to-refresh and on app foreground, with a "last updated" label and a stale-price marker.
-- [ ] Manual prices still work and are visibly distinct from fetched ones.
-- [ ] Graceful failure: a provider outage shows last known prices, not an error screen.
-- [ ] Tests with a fake provider (no network in CI).
+- [x] Backend: `QuoteProvider` interface, Finnhub implementation, shared 120 s cache across users, 20 s time budget, max 50 tickers per refresh.
+- [x] Backend: `POST /prices/refresh` stores shared `market` marks, one per ticker per day (a second refresh the same day updates it).
+- [x] Backend: holdings and watchlist report `price_kind` (manual / market / trade) and `price_as_of`; the same-day tie goes to the user's own manual mark.
+- [x] App: refresh on launch and each return to the foreground (at most every 5 min), and on pull-to-refresh of Dashboard, Portfolio and Watchlist.
+- [x] App: "Prices updated 3:42 PM" label, "N could not be updated" note, and a stale marker (older than 4 days) in words, not only color.
+- [x] Manual prices still work and are labelled "Manual" next to "Market".
+- [x] Graceful failure: provider errors are listed per ticker and keep the last price; 503 (no key) switches the app to "showing the prices you entered" and stops asking.
+- [x] Tests with a fake provider and a fake transport; no network in CI (API 265, app 305).
+- [x] One real Finnhub quote verified from this machine (AAPL).
+- [ ] **Run the whole flow on a device.** Not done.
 
 Nice to have:
 - [ ] Background refresh while the app is closed.
 - [ ] Streaming/WebSocket prices.
-- [ ] Previous-close and day change per holding.
-- [ ] Provider fallback (second source when the first fails).
+- [ ] Previous close and day change per holding (the Finnhub quote already returns `pc`).
+- [ ] Second provider as a fallback.
+- [ ] Skip refreshes outside market hours.
 
 ## Decisions
 
@@ -106,7 +114,9 @@ Nice to have:
 
 ## Open questions
 
-- Which market data provider and plan for item 6? Finnhub free tier is the default assumption.
+- Finnhub's free tier is for personal use; check its terms before serving many users.
+- Phase 9 and this phase are both unmerged to `master`. Merge in order (9 then 10) per the phase-branch workflow once verified on a device.
+- A pytest run crashed once with a native fault dump (traceback through `pytest/__main__`) and passed on every rerun. Not reproduced; if it recurs, suspect the `libsql` native module.
 - A Sentry account and DSN are needed for item 2 to report anything real.
 - The old `freeman-api/` folder was deleted from the parent `CLaude` repo's working tree after the move. Those deletions are uncommitted there; `git -C .. checkout -- freeman-api` restores them. Decide whether to commit the removal.
 
@@ -126,3 +136,4 @@ Nice to have:
 | 2026-11-24 | Item 8: `scripts/perf-bundle.mjs`, `docs/performance.md`, baseline bundle ~7 MB per platform. Trades rows redrew 5 of 5 on an unrelated update, now 0 (`React.memo`, `useCallback`, hoisted separator) with a regression test. tsc, lint and full tests pass. |
 | 2026-11-24 | API moved to `api/` with its own CI job (202 tests passed in the new location before any change). |
 | 2026-11-24 | Item 1: multi-user auth, backend (238 tests) and app (291 tests); tsc and lint clean. Not run on a device. |
+| 2026-11-24 | Item 6: Finnhub price refresh (API 265 tests, app 305, coverage 85%), shared cache, labels and stale marker. Real server smoke-tested with curl (login, rotation, replay, 401/403/503 paths). |

@@ -4,15 +4,18 @@ import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { ChartCard } from '@/components/charts/chart-card';
 import { PnLBars } from '@/components/charts/pnl-bars';
 import { HoldingRow } from '@/components/holding-row';
+import { PriceUpdated } from '@/components/price-updated';
 import { PrivacyToggle } from '@/components/privacy-toggle';
 import { Screen } from '@/components/screen';
 import { EmptyState, ErrorState, LoadingState } from '@/components/screen-state';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, Spacing } from '@/constants/theme';
+import { useRefreshPrices } from '@/hooks/use-market-prices';
 import { useMoney } from '@/hooks/use-money';
 import { usePortfolioSummary } from '@/hooks/use-trades';
 
 export default function PortfolioScreen() {
+  const { mutateAsync: refreshPrices, isPending: refreshingPrices } = useRefreshPrices();
   const summary = usePortfolioSummary();
   const money = useMoney();
 
@@ -38,11 +41,18 @@ export default function PortfolioScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={summary.isRefetching} onRefresh={async () => { await summary.refetch(); }} />}>
+        refreshControl={<RefreshControl refreshing={refreshingPrices || summary.isRefetching}
+            onRefresh={async () => {
+              await refreshPrices().catch(() => undefined); // keeps the old prices on failure
+              await summary.refetch();
+            }}
+          />
+        }>
         <View style={styles.titleRow}>
           <ThemedText type="subtitle">Portfolio</ThemedText>
           <PrivacyToggle />
         </View>
+        <PriceUpdated />
 
         <ChartCard
           title="Unrealized gain / loss"

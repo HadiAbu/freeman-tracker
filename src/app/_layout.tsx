@@ -5,6 +5,7 @@ import React, { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
 import { AppErrorScreen } from '@/components/app-error-screen';
+import { PriceAutoRefresh } from '@/components/price-auto-refresh';
 import { AnimatedSplashOverlay } from '@/components/splash-overlay';
 import { initMonitoring } from '@/lib/monitoring';
 import { PERSIST_BUSTER, PERSIST_MAX_AGE, queryClient, queryPersister } from '@/lib/query-client';
@@ -63,6 +64,7 @@ export default function RootLayout() {
       persistOptions={{ persister: queryPersister, maxAge: PERSIST_MAX_AGE, buster: PERSIST_BUSTER }}>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <AnimatedSplashOverlay />
+        {authStatus === 'signedIn' ? <PriceAutoRefresh /> : null}
         {storesReady && authStatus !== 'restoring' ? <Screens signedIn={authStatus === 'signedIn'} /> : null}
       </ThemeProvider>
     </PersistQueryClientProvider>

@@ -7,6 +7,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useMoney } from '@/hooks/use-money';
 import { formatPercent } from '@/lib/format';
+import { isStalePrice, priceLabel } from '@/lib/price-label';
 import type { Holding } from '@/types';
 
 export function HoldingRow({ holding: h }: { holding: Holding }) {
@@ -23,6 +24,10 @@ export function HoldingRow({ holding: h }: { holding: Holding }) {
             <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
               {h.name ? `${h.name} · ` : ''}
               {money.shares(h.shares)} @ {money.currency(h.avg_cost)}
+            </ThemedText>
+            {/* where the price came from and how old it is, in words */}
+            <ThemedText type="small" themeColor={isStalePrice(h.price_as_of) ? 'loss' : 'textSecondary'}>
+              {priceLabel(h.price_kind, h.price_as_of)}
             </ThemedText>
           </View>
           <View style={styles.right}>

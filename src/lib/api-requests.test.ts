@@ -56,6 +56,7 @@ describe('requests', () => {
   test.each([
     ['createTrade', () => api.createTrade({ ticker: 'A', side: 'buy', shares: 1, price: 1, fee: 0, traded_at: '2026-11-01' }), 'POST', '/trades'],
     ['addWatch', () => api.addWatch({ ticker: 'A' }), 'POST', '/watchlist'],
+    ['refreshPrices', () => api.refreshPrices(), 'POST', '/prices/refresh'],
     ['addPrice', () => api.addPrice({ ticker: 'A', price: 1, as_of: '2026-11-01' }), 'POST', '/prices'],
     ['putHolding', () => api.putHolding('A', { sector: 'Tech' }), 'PUT', '/holdings/A'],
     ['patchHolding', () => api.patchHolding('A', { sector: 'Tech' }), 'PATCH', '/holdings/A'],

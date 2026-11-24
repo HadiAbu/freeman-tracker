@@ -27,6 +27,7 @@ jest.mock('expo-router', () => {
   };
   return { Stack };
 });
+jest.mock('@/components/price-auto-refresh', () => ({ PriceAutoRefresh: () => null }));
 jest.mock('@/components/splash-overlay', () => ({
   AnimatedSplashOverlay: () => {
     const { Text } = require('react-native');

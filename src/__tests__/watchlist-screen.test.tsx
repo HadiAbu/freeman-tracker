@@ -32,13 +32,13 @@ test('lists watched tickers with their target status and last price', async () =
   listWatchlist.mockResolvedValue([
     watchItem({ id: 1, ticker: 'AAPL', price: 180, target_price: 200, pct_to_target: 11.11 }),
     watchItem({ id: 2, ticker: 'MSFT', name: 'Microsoft', price: 410, target_price: 400, pct_to_target: -2.4 }),
-    watchItem({ id: 3, ticker: 'TSLA', name: null, price: null, target_price: null, pct_to_target: null }),
+    watchItem({ id: 3, ticker: 'TSLA', name: null, price: null, price_kind: null, price_as_of: null, target_price: null, pct_to_target: null }),
   ]);
   await renderWithClient(<WatchlistScreen />);
   expect(await screen.findByText('Target $200.00 · +11.11% to go')).toBeTruthy();
   expect(screen.getByText(/Target \$400\.00 reached/)).toBeTruthy();
   expect(screen.getByText('No target set')).toBeTruthy();
-  expect(screen.getByText('no price yet')).toBeTruthy();
+  expect(screen.getByText('No price yet')).toBeTruthy();
 });
 
 test('shows a designed empty state when nothing is watched', async () => {

@@ -9,6 +9,7 @@ import { TrendLine } from '@/components/charts/trend-line';
 import { ChipRow } from '@/components/chip-row';
 import { ErrorBanner } from '@/components/error-banner';
 import { AccountButton } from '@/components/account-button';
+import { PriceUpdated } from '@/components/price-updated';
 import { PrivacyToggle } from '@/components/privacy-toggle';
 import { Screen } from '@/components/screen';
 import { ErrorState, LoadingState } from '@/components/screen-state';
@@ -17,6 +18,7 @@ import { ThemedView } from '@/components/themed-view';
 import { TradeRow } from '@/components/trade-row';
 import { useChartTheme } from '@/constants/chart-theme';
 import { BottomTabInset, Spacing } from '@/constants/theme';
+import { useRefreshPrices } from '@/hooks/use-market-prices';
 import { useMoney } from '@/hooks/use-money';
 import { useAllocation, usePortfolioHistory } from '@/hooks/use-portfolio';
 import { usePortfolioSummary, useRecentTrades } from '@/hooks/use-trades';
@@ -40,13 +42,16 @@ export default function DashboardScreen() {
   const by = usePreferences((s) => s.allocationBy);
   const setBy = usePreferences((s) => s.setAllocationBy);
 
+  const { mutateAsync: refreshPrices, isPending: refreshingPrices } = useRefreshPrices();
   const summary = usePortfolioSummary();
   const trades = useRecentTrades(5);
   const history = usePortfolioHistory();
   const allocation = useAllocation(by);
 
-  const refreshing = summary.isRefetching || trades.isRefetching || history.isRefetching;
+  const refreshing = refreshingPrices || summary.isRefetching || trades.isRefetching || history.isRefetching;
   const refresh = async () => {
+    // New prices first, so the reloads below show them. A failed refresh keeps the old prices.
+    await refreshPrices().catch(() => undefined);
     await Promise.all([summary.refetch(), trades.refetch(), history.refetch(), allocation.refetch()]);
   };
 
@@ -75,6 +80,7 @@ export default function DashboardScreen() {
             <AccountButton />
           </View>
         </View>
+        <PriceUpdated />
 
         <ThemedView type="backgroundElement" style={styles.card}>
           <ThemedText type="small" themeColor="textSecondary">

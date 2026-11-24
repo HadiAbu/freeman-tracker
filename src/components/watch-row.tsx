@@ -5,6 +5,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { formatCurrency, formatPercent } from '@/lib/format';
+import { isStalePrice, priceLabel } from '@/lib/price-label';
 import type { WatchItem } from '@/types';
 
 type Props = {
@@ -60,8 +61,8 @@ export function WatchRow({ item, onPress, onLongPress, onResearch }: Props) {
         </View>
         <View style={styles.right}>
           <ThemedText type="smallBold">{item.price === null ? '—' : formatCurrency(item.price)}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            {item.price === null ? 'no price yet' : 'last price'}
+          <ThemedText type="small" themeColor={isStalePrice(item.price_as_of) ? 'loss' : 'textSecondary'}>
+            {priceLabel(item.price_kind, item.price_as_of)}
           </ThemedText>
         </View>
       </ThemedView>

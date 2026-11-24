@@ -4,12 +4,14 @@ import { FlatList, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { ErrorBanner } from '@/components/error-banner';
+import { PriceUpdated } from '@/components/price-updated';
 import { ResearchBox } from '@/components/research-box';
 import { Screen } from '@/components/screen';
 import { EmptyState, ErrorState, LoadingState } from '@/components/screen-state';
 import { ThemedText } from '@/components/themed-text';
 import { WatchRow } from '@/components/watch-row';
 import { BottomTabInset, Spacing } from '@/constants/theme';
+import { useRefreshPrices } from '@/hooks/use-market-prices';
 import { useDeleteWatch, useWatchlist } from '@/hooks/use-watchlist';
 import { haptic } from '@/lib/haptics';
 import { confirmDestructive } from '@/lib/confirm';
@@ -17,6 +19,7 @@ import type { WatchItem } from '@/types';
 
 export default function WatchlistScreen() {
   const router = useRouter();
+  const { mutateAsync: refreshPrices, isPending: refreshingPrices } = useRefreshPrices();
   const watchlist = useWatchlist();
   const remove = useDeleteWatch();
   const [removeError, setRemoveError] = useState<string | null>(null);
@@ -38,6 +41,10 @@ export default function WatchlistScreen() {
       <View style={styles.header}>
         <ThemedText type="subtitle">Watchlist</ThemedText>
         <Button title="Add ticker" onPress={() => router.push('/add-watch')} />
+      </View>
+
+      <View style={styles.priceNote}>
+        <PriceUpdated />
       </View>
 
       <View style={styles.researchBox}>
@@ -82,8 +89,11 @@ export default function WatchlistScreen() {
               </ThemedText>
             ) : undefined
           }
-          refreshing={watchlist.isRefetching}
-          onRefresh={() => watchlist.refetch()}
+          refreshing={refreshingPrices || watchlist.isRefetching}
+          onRefresh={async () => {
+            await refreshPrices().catch(() => undefined); // keeps the old prices on failure
+            await watchlist.refetch();
+          }}
           contentContainerStyle={styles.list}
         />
       )}
@@ -98,6 +108,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: Spacing.three,
   },
+  priceNote: { paddingHorizontal: Spacing.three },
   researchBox: { paddingBottom: Spacing.three },
   banner: { paddingBottom: Spacing.three },
   list: { flexGrow: 1, paddingBottom: BottomTabInset + Spacing.four },
