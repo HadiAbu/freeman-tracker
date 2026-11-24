@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.analysis.routes import router as analysis_router
 from app.auth import current_user_id
 from app.auth_routes import router as auth_router
+from app.market_routes import router as market_router
 from app.config import get_settings
 from app.db import get_conn, init_schema, one, rows
 from app.models import HoldingMeta, PriceIn, TradeIn, TradePatch, WatchIn, WatchPatch
@@ -24,6 +25,8 @@ from app.portfolio import (
 from app.ledger import (
     PRICE_VISIBLE,
     all_trades as _all_trades,
+    latest_marks as _latest_marks,
+    price_kind as _price_kind,
     latest_prices as _latest_prices,
     meta as _meta,
     positions as _positions,
@@ -53,6 +56,7 @@ if _origins:
 
 app.include_router(auth_router)
 app.include_router(analysis_router)
+app.include_router(market_router)
 
 
 @app.get("/health")
@@ -176,10 +180,13 @@ def add_watch(body: WatchIn, uid: int = Depends(current_user_id), conn=Depends(g
 
 @app.get("/watchlist")
 def list_watch(uid: int = Depends(current_user_id), conn=Depends(get_conn)):
-    latest = _latest_prices(conn, uid)
+    latest = _latest_marks(conn, uid)
     items = rows(conn.execute("SELECT * FROM watchlist WHERE user_id = ? ORDER BY ticker", (uid,)))
     for w in items:
-        w["price"] = latest.get(w["ticker"])
+        mark = latest.get(w["ticker"])
+        w["price"] = mark["price"] if mark else None
+        w["price_as_of"] = mark["as_of"] if mark else None
+        w["price_kind"] = _price_kind(mark["source"]) if mark else None
         t = w["target_price"]
         w["pct_to_target"] = (
             (t - w["price"]) / w["price"] * 100 if t is not None and w["price"] else None
@@ -226,16 +233,7 @@ def add_price(body: PriceIn, uid: int = Depends(current_user_id), conn=Depends(g
 
 @app.get("/prices")
 def latest_prices(uid: int = Depends(current_user_id), conn=Depends(get_conn)):
-    return rows(
-        conn.execute(
-            "SELECT p.* FROM prices p WHERE p.id = ("
-            f" SELECT id FROM prices WHERE ticker = p.ticker AND {PRICE_VISIBLE}"
-            " ORDER BY as_of DESC, id DESC LIMIT 1)"
-            " AND (p.user_id = ? OR p.user_id IS NULL)"
-            " ORDER BY p.ticker",
-            (uid, uid),
-        )
-    )
+    return [m for _, m in sorted(_latest_marks(conn, uid).items())]
 
 
 @app.get("/prices/{ticker}")
@@ -290,7 +288,14 @@ def patch_holding(
 # ---------- portfolio (derived, chart-ready) ----------
 @app.get("/portfolio/summary")
 def portfolio_summary(uid: int = Depends(current_user_id), conn=Depends(get_conn)):
-    return asdict(_summary(conn, uid))
+    out = asdict(_summary(conn, uid))
+    marks = _latest_marks(conn, uid)
+    for h in out["holdings"]:
+        # Only meaningful when the price came from a mark; a last-trade fallback has no date here.
+        mark = marks.get(h["ticker"]) if h["price_source"] == "price" else None
+        h["price_as_of"] = mark["as_of"] if mark else None
+        h["price_kind"] = _price_kind(mark["source"]) if mark else "trade"
+    return out
 
 
 @app.get("/portfolio/allocation")

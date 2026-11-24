@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     # Failed logins allowed per (email, client address) inside the window before a 429.
     login_max_failures: int = 5
     login_window_seconds: int = 900
+    # --- market prices (uses FINNHUB_API_KEY above) ---
+    price_cache_seconds: int = 120
+    quote_timeout_seconds: float = 5.0
     # Comma-separated origins for the web build; native apps ignore CORS.
     cors_origins: str = ""
     # --- news analysis (all keys server-side only) ---

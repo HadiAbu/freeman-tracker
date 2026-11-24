@@ -42,20 +42,35 @@ def positions(trades: list[dict]) -> dict[str, Position]:
 PRICE_VISIBLE = "(user_id = ? OR user_id IS NULL)"
 
 
-def latest_prices(conn, user_id: int) -> dict[str, float]:
-    """Newest visible mark per ticker, computed in SQL (same rule as GET /prices)."""
+# Which mark is "latest" for a ticker: the newest day wins; on the same day the user's own manual
+# mark beats a market one (they typed it on purpose); then the most recently saved.
+_LATEST_ORDER = "as_of DESC, (user_id IS NULL) ASC, id DESC"
+
+
+def latest_marks(conn, user_id: int) -> dict[str, dict]:
+    """Newest visible mark per ticker: {ticker: full price row}."""
     return {
-        r["ticker"]: r["price"]
+        r["ticker"]: r
         for r in rows(
             conn.execute(
-                "SELECT p.ticker, p.price FROM prices p WHERE p.id = ("
+                "SELECT p.* FROM prices p"
+                " WHERE (p.user_id = ? OR p.user_id IS NULL) AND p.id = ("
                 f" SELECT id FROM prices WHERE ticker = p.ticker AND {PRICE_VISIBLE}"
-                " ORDER BY as_of DESC, id DESC LIMIT 1)"
-                f" AND (p.user_id = ? OR p.user_id IS NULL)",
+                f" ORDER BY {_LATEST_ORDER} LIMIT 1)",
                 (user_id, user_id),
             )
         )
     }
+
+
+def latest_prices(conn, user_id: int) -> dict[str, float]:
+    """Newest visible price per ticker (same rule as GET /prices)."""
+    return {t: m["price"] for t, m in latest_marks(conn, user_id).items()}
+
+
+def price_kind(source: str | None) -> str:
+    """How a price should be described to the user: typed by hand, or from the market."""
+    return "manual" if source in (None, "manual") else "market"
 
 
 def meta(conn, user_id: int) -> dict[str, dict]:

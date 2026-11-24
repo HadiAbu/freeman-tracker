@@ -47,11 +47,15 @@ inherits everything. Create it before enabling registration.
 |---|---|
 | `POST/GET /trades`, `PATCH/DELETE /trades/{id}` | Buys and sells. Changes that would oversell return 409. |
 | `POST/GET /watchlist`, `PATCH/DELETE /watchlist/{id}` | Watchlist with target price; GET adds latest price and `pct_to_target`. |
-| `POST /prices`, `GET /prices`, `GET /prices/{ticker}` | Manual price marks (latest per ticker / history). |
+| `POST /prices`, `GET /prices`, `GET /prices/{ticker}` | Manual price marks (latest per ticker / history). A manual mark is private to its owner. |
+| `POST /prices/refresh` | Fetches current market prices (Finnhub) for your open positions and watchlist and stores them as shared `market` marks, one per ticker per day. Needs `FINNHUB_API_KEY` (else 503). A provider failure is not an error: failed tickers are listed in `failed` and keep their last price. Quotes are cached for 120 s across all users. |
 | `PUT /holdings/{ticker}` | Name, sector, asset class (for allocation pies). |
 | `GET /portfolio/summary` | Value, cost, unrealized and realized P&L, per-holding rows. |
 | `GET /portfolio/allocation?by=ticker\|sector\|asset_class` | Pie slices: label, value, percent. |
 | `GET /portfolio/history` | Portfolio value per date, for the line chart. |
+
+Which price counts: the newest day wins; on the same day your own manual mark beats a market one.
+Holdings and watchlist items report `price_kind` (`manual`, `market` or `trade`) and `price_as_of`.
 
 Positions use the average-cost method (`app/portfolio.py`). A position with no price mark
 is valued at its last trade price.
