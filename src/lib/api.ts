@@ -15,12 +15,11 @@ import type {
   WatchItem,
 } from '@/types';
 import { recordApiFailure } from '@/lib/monitoring';
+import { AuthError, getAccessToken, refreshSession } from '@/lib/session';
 
-// EXPO_PUBLIC_* values are inlined into the JS bundle at build time, so the key is
-// readable by anyone who has the app. That is acceptable for a personal, single-user
-// tracker; real accounts replace it later.
+// The API address is public. Access is by a per-user token (see lib/session), never a secret
+// compiled into the bundle.
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
-const API_KEY = process.env.EXPO_PUBLIC_API_KEY;
 
 export class ApiError extends Error {
   constructor(
@@ -41,10 +40,31 @@ function detailToMessage(detail: unknown): string | null {
   return null;
 }
 
-async function request<T>(path: string, init: RequestInit = {}, timeoutMs = 15_000): Promise<T> {
-  if (!BASE_URL || !API_KEY) {
-    throw new ApiError(0, 'App is not configured: set EXPO_PUBLIC_API_URL and EXPO_PUBLIC_API_KEY.');
+const SESSION_ENDED = 'Your session has ended. Please sign in again.';
+
+/** Turns a failure from the token layer into the error shape screens already handle. */
+async function currentToken(): Promise<string> {
+  let token: string | null;
+  try {
+    token = await getAccessToken();
+  } catch (e) {
+    if (e instanceof AuthError) throw new ApiError(e.status, e.message);
+    throw e;
   }
+  if (!token) throw new ApiError(401, SESSION_ENDED);
+  return token;
+}
+
+async function request<T>(
+  path: string,
+  init: RequestInit = {},
+  timeoutMs = 15_000,
+  retried = false,
+): Promise<T> {
+  if (!BASE_URL) {
+    throw new ApiError(0, 'App is not configured: set EXPO_PUBLIC_API_URL.');
+  }
+  const token = await currentToken();
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -59,11 +79,29 @@ async function request<T>(path: string, init: RequestInit = {}, timeoutMs = 15_0
       res = await fetch(`${BASE_URL}${path}`, {
         ...init,
         signal: controller.signal,
-        headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY, ...init.headers },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          ...init.headers,
+        },
       });
     } catch (e) {
       if (isAbort(e)) throw tooLong();
       throw new ApiError(0, `Could not reach the server at ${BASE_URL}.`);
+    }
+
+    if (res.status === 401 && !retried) {
+      // The access token expired (they last 15 minutes). Swap the refresh token for a new pair and
+      // try once more; if the server rejects the refresh the session is over.
+      let renewed = false;
+      try {
+        renewed = await refreshSession();
+      } catch (e) {
+        if (e instanceof AuthError) throw new ApiError(e.status, e.message);
+        throw e;
+      }
+      if (!renewed) throw new ApiError(401, SESSION_ENDED);
+      return request<T>(path, init, timeoutMs, true);
     }
 
     if (!res.ok) {

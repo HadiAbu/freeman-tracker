@@ -1,6 +1,30 @@
 import { api, ApiError } from '@/lib/api';
 
-// jest.config.js sets EXPO_PUBLIC_API_URL=http://api.test and EXPO_PUBLIC_API_KEY=test-key.
+// jest.config.js sets EXPO_PUBLIC_API_URL=http://api.test.
+
+// The token layer is tested on its own (session.test.ts). Here it hands out a fixed token.
+const mockSession = { getAccessToken: jest.fn(), refreshSession: jest.fn() };
+jest.mock('@/lib/session', () => {
+  class AuthError extends Error {
+    status: number;
+    constructor(status: number, message: string) {
+      super(message);
+      this.status = status;
+    }
+  }
+  return {
+    AuthError,
+    getAccessToken: (...a: unknown[]) => mockSession.getAccessToken(...a),
+    refreshSession: (...a: unknown[]) => mockSession.refreshSession(...a),
+  };
+});
+beforeEach(() => {
+  mockSession.getAccessToken.mockReset();
+  mockSession.refreshSession.mockReset();
+  mockSession.getAccessToken.mockResolvedValue('test-token');
+  mockSession.refreshSession.mockResolvedValue(true);
+});
+
 
 const json = (status: number, body: unknown) =>
   Promise.resolve({ ok: status < 400, status, json: () => Promise.resolve(body) } as Response);
@@ -18,7 +42,7 @@ test('analyze posts the request and returns the analysis', async () => {
   expect(String(url)).toBe('http://api.test/analysis');
   expect((init as RequestInit).method).toBe('POST');
   expect(JSON.parse((init as RequestInit).body as string)).toEqual({ ticker: 'AAPL', personalize: false });
-  expect(((init as RequestInit).headers as Record<string, string>)['X-API-Key']).toBe('test-key');
+  expect(((init as RequestInit).headers as Record<string, string>)['Authorization']).toBe('Bearer test-token');
 });
 
 test('latestAnalysis encodes the ticker', async () => {

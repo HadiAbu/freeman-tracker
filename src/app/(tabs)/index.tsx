@@ -8,6 +8,7 @@ import { ChartCard, ChartNote } from '@/components/charts/chart-card';
 import { TrendLine } from '@/components/charts/trend-line';
 import { ChipRow } from '@/components/chip-row';
 import { ErrorBanner } from '@/components/error-banner';
+import { AccountButton } from '@/components/account-button';
 import { PrivacyToggle } from '@/components/privacy-toggle';
 import { Screen } from '@/components/screen';
 import { ErrorState, LoadingState } from '@/components/screen-state';
@@ -69,7 +70,10 @@ export default function DashboardScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}>
         <View style={styles.titleRow}>
           <ThemedText type="subtitle">Dashboard</ThemedText>
-          <PrivacyToggle />
+          <View style={styles.actions}>
+            <PrivacyToggle />
+            <AccountButton />
+          </View>
         </View>
 
         <ThemedView type="backgroundElement" style={styles.card}>
@@ -151,6 +155,7 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   content: { gap: Spacing.three, paddingVertical: Spacing.three, paddingBottom: BottomTabInset + Spacing.four },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   card: { padding: Spacing.four, borderRadius: Spacing.four, gap: Spacing.one },
   value: { fontSize: 40, lineHeight: 48 },
   filterRow: { gap: Spacing.two, marginTop: Spacing.two },

@@ -1,6 +1,5 @@
 // Fixed, fake API settings for tests (never the real .env.local values).
 process.env.EXPO_PUBLIC_API_URL = 'http://api.test';
-process.env.EXPO_PUBLIC_API_KEY = 'test-key';
 
 module.exports = {
   preset: 'jest-expo',

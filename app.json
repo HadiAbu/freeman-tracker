@@ -2,7 +2,7 @@
   "expo": {
     "name": "Freeman",
     "slug": "freeman",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "freemantracker",
@@ -36,7 +36,8 @@
         }
       ],
       "expo-web-browser",
-      "@sentry/react-native"
+      "@sentry/react-native",
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,

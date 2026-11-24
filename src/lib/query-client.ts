@@ -4,6 +4,8 @@ import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persi
 import { focusManager, onlineManager, QueryClient } from '@tanstack/react-query';
 import { AppState, Platform } from 'react-native';
 
+import { onSessionEnd } from '@/lib/session';
+
 // Cached data older than this is dropped on restore. gcTime must be at least as long, or the
 // cache is garbage collected before it can be persisted and restored.
 export const PERSIST_MAX_AGE = 24 * 60 * 60 * 1000;
@@ -39,3 +41,10 @@ onlineManager.setEventListener((setOnline) =>
     setOnline(state.isConnected ?? true);
   }),
 );
+
+// Cached server data belongs to the signed-in account. Signing out must empty memory and the copy
+// on disk, or the next person to sign in on this device would see it.
+onSessionEnd(async () => {
+  queryClient.clear();
+  await queryPersister.removeClient();
+});

@@ -10,7 +10,8 @@ Status key: `[ ]` not started, `[~]` in progress, `[x]` done and verified, `[-]`
 - [x] Tracker and phase branch.
 - [x] Item 2 (error monitoring) core, see below.
 - [~] Item 8 (performance evidence): script, baseline and Trades fix done; cold start and Watchlist open.
-- Next: item 1 (auth), then 6 (market prices).
+- [~] Item 1 (auth), multi-user: backend and app done and tested; needs a device run. See below.
+- Next: item 6 (market prices).
   Order is smallest and least risky first. Auth is the biggest change and touches both repos, so it goes
   after the quick wins.
 
@@ -50,27 +51,32 @@ Nice to have:
 - [~] Re-render counts: Trades covered by a test; other screens not.
 - [ ] Swap to `FlashList` only if the numbers justify it.
 
-### 1. Authentication
-Decision taken (change it here if you disagree): **single-user login**, not multi-tenant. One account,
-username + password, short-lived access token plus refresh token. This removes the bundled secret. Full
-multi-user needs a `user_id` on every table and a data migration, so it is listed as nice to have.
+### 1. Authentication (multi-user)
+Decision (changed 2026-11-24): **multi-user**, not single-user. Each account sees only its own data.
+Email + password, short-lived access token (15 min) plus single-use rotating refresh token.
 
 Must have:
-- [ ] Backend: `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`; password hashed (argon2 or bcrypt); signed access token ~15 min, refresh token longer and revocable.
-- [ ] Backend: every data route requires a valid access token; `X-API-Key` removed or kept only behind a flag for scripts.
-- [ ] Backend: login rate limiting; fail closed when no credentials are configured.
-- [ ] Backend tests for login, expiry, refresh, bad token, rate limit.
-- [ ] App: login screen, token kept in `expo-secure-store` (never AsyncStorage), auth state in Zustand.
-- [ ] App: API client attaches the token and refreshes once on 401, then signs out.
-- [ ] App: route guard so signed-out users only see login; sign-out clears the Query cache and persisted data.
-- [ ] Remove `EXPO_PUBLIC_API_KEY` from the app, `eas.json` docs and `docs/releasing.md`.
-- [ ] App tests for login, guard, 401 refresh and sign-out.
+- [x] Backend: `POST /auth/login`, `/auth/refresh`, `/auth/logout`, `GET /auth/me`, gated `POST /auth/register`; argon2id passwords; HS256 access tokens; refresh tokens stored hashed, rotated on use, whole family revoked on replay.
+- [x] Backend: every data route requires a valid access token and filters by it; `X-API-Key` removed. Another user's row id answers 404.
+- [x] Backend: login throttle (per account and per address, 429 + `Retry-After`); fails closed (503) with no `JWT_SECRET`; registration closed by default.
+- [x] Backend: schema migration for databases from the single-user version (existing data and price marks adopted by account id 1) and a `scripts/create_user` command.
+- [x] Backend tests: auth flows, expiry, forgery, refresh rotation and replay, throttle, per-user isolation on every route, migration (238 tests pass).
+- [x] App: sign-in / create-account screen; refresh token in `expo-secure-store`, access token in memory only; auth state in Zustand.
+- [x] App: API client attaches the bearer token, refreshes once on 401 (single flight) then ends the session; offline never signs the user out.
+- [x] App: route guard (`Stack.Protected`); sign-out revokes the token, clears the keychain, the query cache (memory and disk) and the trade draft.
+- [x] `EXPO_PUBLIC_API_KEY` removed from app, tests and docs.
+- [x] App tests: session, API client refresh/retry, sign-in screen, guard, sign-out button (291 tests pass).
+- [ ] **Run it on a device or simulator against the real server.** Not done. Everything above is verified only by unit tests with a faked network and a faked keychain.
+- [ ] Rotate the old shared key: remove `API_KEY` from the production server `.env`, delete `EXPO_PUBLIC_API_KEY` from EAS environments.
+- [ ] Create the first account on the production database *before* opening registration (it becomes id 1 and inherits existing data).
 
 Nice to have:
 - [ ] Biometric unlock with `expo-local-authentication`.
-- [ ] Multi-user support (`user_id` columns, migration).
+- [ ] Password reset / change password (needs email delivery).
 - [ ] Sign in with Apple/Google.
 - [ ] Device list and remote sign-out.
+- [ ] Database-backed login throttle (the in-memory one covers a single server process only).
+- [ ] Per-user cap on daily analyses is per account; add a global cap if the OpenAI bill matters.
 
 ### 6. Automatic market prices
 Must have:
@@ -92,19 +98,23 @@ Nice to have:
 | Date | Decision | Reason |
 |---|---|---|
 | 2026-11-24 | New branch `phase-10-production-hardening` off `phase-9-release-channels` | Phase 9 is not merged to `master` yet; branch rule says build on it |
-| 2026-11-24 | Auth is single-user first | Multi-tenant needs a schema migration; do the security fix first |
+| 2026-11-24 | Auth is multi-user (supersedes single-user-first) | Requested; the schema already had `user_id` everywhere but prices, so the migration is small |
+| 2026-11-24 | API moved into this repo under `api/` | One repo, one CI, app and server change together. History stays in the old parent repo |
+| 2026-11-24 | Registration closed by default; accounts via `scripts.create_user` | An open endpoint on a public server would let a stranger claim the existing data as user 1 |
+| 2026-11-24 | Access token in memory, refresh token in the keychain; web keeps both in memory | localStorage is readable by any script on the page |
 | 2026-11-24 | Sentry stays inert without a DSN | Keeps tests, CI and local dev free of network and config |
 
 ## Open questions
 
 - Which market data provider and plan for item 6? Finnhub free tier is the default assumption.
 - A Sentry account and DSN are needed for item 2 to report anything real.
-- `freeman-api` lives in the parent `CLaude` repo, which has many unrelated uncommitted changes. Backend
-  edits will be made as files only and not committed there without your say-so.
+- The old `freeman-api/` folder was deleted from the parent `CLaude` repo's working tree after the move. Those deletions are uncommitted there; `git -C .. checkout -- freeman-api` restores them. Decide whether to commit the removal.
 
 ## Risks
 
-- Removing the API key breaks any build that still uses it. Needs a new build and a runtime version bump (see `docs/releasing.md`).
+- Removing the API key breaks any build that still uses it. Needs a new build; `expo.version` is bumped to 1.1.0 so OTA updates only reach new builds.
+- Every existing user of the old build is locked out until they install the new one and sign in.
+- Web: the session is memory-only, so a page reload signs the user out.
 - Adding `@sentry/react-native` and `expo-secure-store` adds native code, so OTA alone cannot ship them.
 
 ## Log
@@ -114,3 +124,5 @@ Nice to have:
 | 2026-11-24 | Created branch and this tracker |
 | 2026-11-24 | Item 2: `@sentry/react-native` added, `src/lib/monitoring.ts` (inert without `EXPO_PUBLIC_SENTRY_DSN`, scrubs money fields, tags channel/update ID), root `ErrorBoundary`, API-failure breadcrumbs. tsc, lint and 263 tests pass. **Not yet verified on a device/release build** (needs a DSN and a new native build). Source maps and the rollout-watching doc step are still open. |
 | 2026-11-24 | Item 8: `scripts/perf-bundle.mjs`, `docs/performance.md`, baseline bundle ~7 MB per platform. Trades rows redrew 5 of 5 on an unrelated update, now 0 (`React.memo`, `useCallback`, hoisted separator) with a regression test. tsc, lint and full tests pass. |
+| 2026-11-24 | API moved to `api/` with its own CI job (202 tests passed in the new location before any change). |
+| 2026-11-24 | Item 1: multi-user auth, backend (238 tests) and app (291 tests); tsc and lint clean. Not run on a device. |

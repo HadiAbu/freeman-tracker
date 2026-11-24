@@ -11,3 +11,21 @@ jest.mock('@sentry/react-native', () => ({
   captureException: jest.fn(),
   addBreadcrumb: jest.fn(),
 }));
+
+// The keychain does not exist in Jest. An in-memory stand-in with the same async API; tests that
+// need a clean slate call `__reset` (see src/test-utils/session.ts).
+jest.mock('expo-secure-store', () => {
+  let store = new Map();
+  return {
+    getItemAsync: jest.fn(async (k) => (store.has(k) ? store.get(k) : null)),
+    setItemAsync: jest.fn(async (k, v) => {
+      store.set(k, v);
+    }),
+    deleteItemAsync: jest.fn(async (k) => {
+      store.delete(k);
+    }),
+    __reset: () => {
+      store = new Map();
+    },
+  };
+});

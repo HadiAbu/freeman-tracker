@@ -20,16 +20,19 @@ asset class (these drive the Sector and Asset class views).
 
 ## Run it locally
 
-1. Start the API (see `api/README.md`). For a phone on your network use `--host 0.0.0.0`.
+1. Start the API (see `api/README.md`) and create an account with `python -m scripts.create_user <email>`.
+   For a phone on your network use `--host 0.0.0.0`.
 2. Create `.env.local` (git-ignored) in this folder:
 
    ```
    EXPO_PUBLIC_API_URL=http://<your-LAN-IP>:8000
-   EXPO_PUBLIC_API_KEY=<the API_KEY from api/.env>
+   # optional: crash reports (Sentry). Leave unset in development.
+   EXPO_PUBLIC_SENTRY_DSN=
    ```
 
-   `EXPO_PUBLIC_*` values are bundled into the app, so anyone with the app can read the key. That is
-   accepted for a personal single-user app; real accounts replace it later.
+   `EXPO_PUBLIC_*` values are bundled into the app and readable by anyone who has it, so they must
+   never be secrets. Neither of these is: the API address is public, and a Sentry DSN is designed to
+   be public. Access to data is by signing in; there is no key in the app.
 3. Install and start:
 
    ```bash

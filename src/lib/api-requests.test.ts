@@ -1,6 +1,30 @@
 import { api, ApiError } from '@/lib/api';
 
-// jest.config.js sets EXPO_PUBLIC_API_URL=http://api.test and EXPO_PUBLIC_API_KEY=test-key.
+// jest.config.js sets EXPO_PUBLIC_API_URL=http://api.test.
+
+// The token layer is tested on its own (session.test.ts). Here it hands out a fixed token.
+const mockSession = { getAccessToken: jest.fn(), refreshSession: jest.fn() };
+jest.mock('@/lib/session', () => {
+  class AuthError extends Error {
+    status: number;
+    constructor(status: number, message: string) {
+      super(message);
+      this.status = status;
+    }
+  }
+  return {
+    AuthError,
+    getAccessToken: (...a: unknown[]) => mockSession.getAccessToken(...a),
+    refreshSession: (...a: unknown[]) => mockSession.refreshSession(...a),
+  };
+});
+beforeEach(() => {
+  mockSession.getAccessToken.mockReset();
+  mockSession.refreshSession.mockReset();
+  mockSession.getAccessToken.mockResolvedValue('test-token');
+  mockSession.refreshSession.mockResolvedValue(true);
+});
+
 
 const json = (status: number, body: unknown) =>
   Promise.resolve({ ok: status < 400, status, json: () => Promise.resolve(body) } as Response);
@@ -35,13 +59,13 @@ describe('requests', () => {
     ['addPrice', () => api.addPrice({ ticker: 'A', price: 1, as_of: '2026-11-01' }), 'POST', '/prices'],
     ['putHolding', () => api.putHolding('A', { sector: 'Tech' }), 'PUT', '/holdings/A'],
     ['patchHolding', () => api.patchHolding('A', { sector: 'Tech' }), 'PATCH', '/holdings/A'],
-  ])('%s uses %s %s with the API key', async (_name, call, method, path) => {
+  ])('%s uses %s %s with the bearer token', async (_name, call, method, path) => {
     const spy = jest.spyOn(global, 'fetch').mockReturnValue(json(200, {}));
     await call();
     const { url, init } = lastCall(spy);
     expect(url).toBe(`http://api.test${path}`);
     expect(init.method).toBe(method);
-    expect((init.headers as Record<string, string>)['X-API-Key']).toBe('test-key');
+    expect((init.headers as Record<string, string>)['Authorization']).toBe('Bearer test-token');
   });
 
   test('tickers are URL-encoded in paths', async () => {
@@ -108,9 +132,8 @@ describe('errors', () => {
 
   test('a missing configuration fails clearly and never calls fetch', async () => {
     const spy = jest.spyOn(global, 'fetch');
-    const saved = { url: process.env.EXPO_PUBLIC_API_URL, key: process.env.EXPO_PUBLIC_API_KEY };
+    const saved = { url: process.env.EXPO_PUBLIC_API_URL };
     process.env.EXPO_PUBLIC_API_URL = '';
-    process.env.EXPO_PUBLIC_API_KEY = '';
     try {
       let unconfigured: typeof api | undefined;
       jest.isolateModules(() => {
@@ -123,7 +146,6 @@ describe('errors', () => {
       expect(spy).not.toHaveBeenCalled();
     } finally {
       process.env.EXPO_PUBLIC_API_URL = saved.url;
-      process.env.EXPO_PUBLIC_API_KEY = saved.key;
     }
   });
 
@@ -141,5 +163,49 @@ describe('errors', () => {
     } finally {
       process.env.EXPO_PUBLIC_API_URL = saved;
     }
+  });
+});
+
+describe('authentication', () => {
+  test('an expired access token is refreshed once and the request is retried with the new token', async () => {
+    mockSession.getAccessToken.mockResolvedValueOnce('old').mockResolvedValueOnce('new');
+    const spy = jest
+      .spyOn(global, 'fetch')
+      .mockReturnValueOnce(json(401, { detail: 'Session expired' }))
+      .mockReturnValueOnce(json(200, [{ id: 1 }]));
+    await expect(api.listWatchlist()).resolves.toEqual([{ id: 1 }]);
+    expect(mockSession.refreshSession).toHaveBeenCalledTimes(1);
+    const auth = (i: number) => ((spy.mock.calls[i][1] as RequestInit).headers as Record<string, string>).Authorization;
+    expect([auth(0), auth(1)]).toEqual(['Bearer old', 'Bearer new']);
+  });
+
+  test('it never retries more than once', async () => {
+    const spy = jest.spyOn(global, 'fetch').mockReturnValue(json(401, { detail: 'Session expired' }));
+    await expect(api.listWatchlist()).rejects.toMatchObject({ status: 401 });
+    expect(spy).toHaveBeenCalledTimes(2);
+    expect(mockSession.refreshSession).toHaveBeenCalledTimes(1);
+  });
+
+  test('a rejected refresh ends the request with a sign-in message and no retry', async () => {
+    mockSession.refreshSession.mockResolvedValue(false);
+    const spy = jest.spyOn(global, 'fetch').mockReturnValue(json(401, {}));
+    await expect(api.listWatchlist()).rejects.toMatchObject({
+      status: 401,
+      message: expect.stringContaining('sign in again'),
+    });
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  test('signed out: no network call is made at all', async () => {
+    mockSession.getAccessToken.mockResolvedValue(null);
+    const spy = jest.spyOn(global, 'fetch');
+    await expect(api.listWatchlist()).rejects.toMatchObject({ status: 401 });
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  test('being offline while renewing the token is a network error, not a sign-out', async () => {
+    const { AuthError } = jest.requireMock('@/lib/session');
+    mockSession.getAccessToken.mockRejectedValue(new AuthError(0, 'Could not reach the server at http://api.test.'));
+    await expect(api.listWatchlist()).rejects.toMatchObject({ status: 0, message: expect.stringContaining('Could not reach') });
   });
 });
