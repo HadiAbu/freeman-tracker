@@ -70,6 +70,9 @@ test.each([
   ['Alert above (optional)', '-5'],
   ['Alert above (optional)', 'abc'],
   ['Alert above (optional)', '0'],
+  ['Alert above (optional)', 'Infinity'],
+  ['Alert below (optional)', '0'],
+  ['Alert below (optional)', 'Infinity'],
   ['Alert below (optional)', '-5'],
   ['Alert below (optional)', 'abc'],
 ])('rejects %p = %p without a request', async (label, value) => {

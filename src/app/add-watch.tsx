@@ -12,6 +12,8 @@ type Errors = Partial<Record<'ticker' | 'upper' | 'lower', string>>;
 
 const num = (s: string) => Number(s.trim().replace(',', '.'));
 const blank = (s: string) => s.trim() === '';
+// Number() also reads "Infinity", which is not a price.
+const isPrice = (n: number) => Number.isFinite(n) && n > 0;
 
 export default function AddWatchScreen() {
   const router = useRouter();
@@ -28,8 +30,8 @@ export default function AddWatchScreen() {
   function submit() {
     const e: Errors = {};
     if (!/^[A-Za-z0-9.\-]{1,15}$/.test(ticker.trim())) e.ticker = 'Enter a ticker, e.g. NVDA';
-    if (!blank(upper) && !(num(upper) > 0)) e.upper = 'Enter a price above 0';
-    if (!blank(lower) && !(num(lower) > 0)) e.lower = 'Enter a price above 0';
+    if (!blank(upper) && !isPrice(num(upper))) e.upper = 'Enter a price above 0';
+    if (!blank(lower) && !isPrice(num(lower))) e.lower = 'Enter a price above 0';
     if (!e.upper && !e.lower && !blank(upper) && !blank(lower) && num(lower) >= num(upper)) {
       e.lower = 'Must be below the upper limit';
     }
