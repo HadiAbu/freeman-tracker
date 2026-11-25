@@ -17,7 +17,7 @@ On the watchlist, let a user set an **upper limit** and a **lower limit** per st
 | Existing `target_price` | Becomes the upper limit. A new lower limit is added. |
 | Alert email address | Set in the app (per account), with a "Send test email" button |
 | Check interval | Every 2 minutes (`ALERT_CHECK_SECONDS=120`) |
-| Cooldown | At most one email per limit per hour, so a price flickering around a limit cannot flood the inbox |
+| Cooldown | At most one email per watchlist item per hour (one `last_alerted_at` per item), so a price flickering around a limit cannot flood the inbox |
 | Scope | Watchlist items only. Held positions carry no limits. |
 | Email content | Detailed: company, price, limit, how far past it, change since yesterday's close, both limits, your note, price time |
 | Push notifications | Dropped. Email only. |
@@ -104,6 +104,7 @@ You will be emailed again only after the price returns between your limits and
 crosses one again (at most once an hour). Change or remove limits in the app.
 ```
 
+- `Price as of` is the time of the check; when the last trade was on an earlier day (a weekend or holiday) it adds `, last trade 2026-11-24` inside the brackets.
 - A lower-limit email reads "fell below your lower limit" with the same details.
 - Lines whose data is missing are left out (no note, no previous close, only one limit set).
 - Never included: share counts, cost basis, balances, or portfolio value.
@@ -125,7 +126,7 @@ crosses one again (at most once an hour). Change or remove limits in the app.
   emailed. (The old "Target price" label and its "X% to go" text become the upper limit.)
 - **Watch row:** `Alert above $190.00 · 4.2% to go`, `Alert below $150.00`; a limit already beyond
   shows `paused until the price crosses back`.
-- **Alert email screen** (opened from the account button): the address field, "Send test email", and a
+- **Alert email screen** (opened from an "Email alerts" button under the Watchlist header; the account button only signs out): the address field, "Send test email", and a
   line saying whether the server has email set up.
 - This is JavaScript only: no new native module, no new build for this feature.
 
