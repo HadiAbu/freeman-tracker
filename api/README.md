@@ -49,7 +49,17 @@ Each watchlist item can have an upper and a lower limit. While the server is run
 reaches a limit. It emails once, re-arms when the price is back between the limits, and sends at most
 one email per item per hour (`ALERT_COOLDOWN_SECONDS`, 3600). Alerts only fire while the server is
 running and can reach Finnhub and your mail server. Needs `FINNHUB_API_KEY`, `SMTP_USER` and
-`SMTP_PASSWORD` (see `.env.example`).
+`SMTP_PASSWORD` (see `.env.example`). `ALERT_CHECK_SECONDS` must be at least 10 and
+`ALERT_COOLDOWN_SECONDS` at least 60; the server refuses to start with a smaller value.
+
+What to expect:
+
+- A limit that the latest known price has already passed starts paused. It emails only after the
+  price comes back and reaches the limit again.
+- Signing out of the app does not stop alerts. They run on the server until you clear the alert email
+  address or remove the limits.
+- At most 50 distinct tickers with limits are checked per cycle, counted across all accounts. Any
+  beyond that are not checked; the server only logs how many were left out.
 
 | Endpoint | Purpose |
 | --- | --- |
