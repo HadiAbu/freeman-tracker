@@ -1,12 +1,10 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 
+import { ScrollScreen } from '@/components/layout/scroll-screen';
 import { Button } from '@/components/ui/button';
 import { TextField } from '@/components/ui/text-field';
 import { ThemedText } from '@/components/ui/themed-text';
-import { ThemedView } from '@/components/ui/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAddPrice } from '@/hooks/use-watchlist';
 import { haptic } from '@/lib/haptics';
 import { isISODate, todayISO } from '@/lib/format';
@@ -50,65 +48,47 @@ export default function LogPriceScreen() {
   }
 
   return (
-    <ThemedView style={styles.root}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.root}
-      >
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <TextField
-            label="Ticker"
-            error={errors.ticker}
-            value={ticker}
-            onChangeText={setTicker}
-            editable={!param}
-            placeholder="AAPL"
-            autoCapitalize="characters"
-            autoCorrect={false}
-          />
-          <TextField
-            label="Price (USD)"
-            error={errors.price}
-            value={price}
-            onChangeText={setPrice}
-            placeholder="189.50"
-            keyboardType="decimal-pad"
-            autoFocus
-          />
-          <TextField
-            label="As of"
-            error={errors.date}
-            value={date}
-            onChangeText={setDate}
-            placeholder="YYYY-MM-DD"
-            autoCorrect={false}
-            autoCapitalize="none"
-          />
-          <ThemedText type="small" themeColor="textSecondary">
-            The newest price for a ticker values your position and drives its gain or loss.
-          </ThemedText>
+    <ScrollScreen avoidKeyboard>
+      <TextField
+        label="Ticker"
+        error={errors.ticker}
+        value={ticker}
+        onChangeText={setTicker}
+        editable={!param}
+        placeholder="AAPL"
+        autoCapitalize="characters"
+        autoCorrect={false}
+      />
+      <TextField
+        label="Price (USD)"
+        error={errors.price}
+        value={price}
+        onChangeText={setPrice}
+        placeholder="189.50"
+        keyboardType="decimal-pad"
+        autoFocus
+      />
+      <TextField
+        label="As of"
+        error={errors.date}
+        value={date}
+        onChangeText={setDate}
+        placeholder="YYYY-MM-DD"
+        autoCorrect={false}
+        autoCapitalize="none"
+      />
+      <ThemedText type="small" themeColor="textSecondary">
+        The newest price for a ticker values your position and drives its gain or loss.
+      </ThemedText>
 
-          {addPrice.isError ? (
-            <ThemedText themeColor="loss" accessibilityRole="alert">
-              {addPrice.error.message}
-            </ThemedText>
-          ) : null}
+      {addPrice.isError ? (
+        <ThemedText themeColor="loss" accessibilityRole="alert">
+          {addPrice.error.message}
+        </ThemedText>
+      ) : null}
 
-          <Button title="Save price" onPress={submit} loading={addPrice.isPending} />
-          <Button title="Cancel" variant="secondary" onPress={close} />
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </ThemedView>
+      <Button title="Save price" onPress={submit} loading={addPrice.isPending} />
+      <Button title="Cancel" variant="secondary" onPress={close} />
+    </ScrollScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1 },
-  content: {
-    padding: Spacing.three,
-    gap: Spacing.three,
-    width: '100%',
-    maxWidth: MaxContentWidth,
-    alignSelf: 'center',
-  },
-});

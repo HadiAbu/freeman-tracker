@@ -1,17 +1,18 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { StyleSheet, Switch, View } from 'react-native';
 
 import { CaseList } from '@/components/analysis/case-list';
 import { SourceList } from '@/components/analysis/source-list';
 import { StanceChip } from '@/components/analysis/stance-chip';
+import { ScrollScreen } from '@/components/layout/scroll-screen';
 import { ErrorBoundary } from '@/components/feedback/error-boundary';
 import { Button } from '@/components/ui/button';
 import { ErrorBanner } from '@/components/feedback/error-banner';
 import { ErrorState, LoadingState } from '@/components/feedback/screen-state';
 import { ThemedText } from '@/components/ui/themed-text';
 import { ThemedView } from '@/components/ui/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 import { useLatestAnalysis, useRunAnalysis } from '@/hooks/use-analysis';
 import { usePortfolioSummary } from '@/hooks/use-trades';
 import { timeAgo } from '@/lib/time-ago';
@@ -142,45 +143,31 @@ export default function AnalysisScreen() {
   }
 
   return (
-    <ThemedView style={styles.root}>
+    <ScrollScreen>
       <Stack.Screen options={{ title: ticker }} />
-      <ScrollView contentContainerStyle={styles.content}>
-        {held ? (
-          <View style={styles.switchRow}>
-            <ThemedText>Use my position</ThemedText>
-            <Switch
-              accessibilityLabel="Use my position"
-              value={usePosition}
-              disabled={run.isPending}
-              onValueChange={togglePosition}
-            />
-          </View>
-        ) : null}
-        {run.isError && !dismissed ? (
-          <ErrorBanner
-            message={(run.error as Error).message}
-            onDismiss={() => setDismissed(true)}
+      {held ? (
+        <View style={styles.switchRow}>
+          <ThemedText>Use my position</ThemedText>
+          <Switch
+            accessibilityLabel="Use my position"
+            value={usePosition}
+            disabled={run.isPending}
+            onValueChange={togglePosition}
           />
-        ) : null}
-        {body}
-        <ThemedText type="small" themeColor="textSecondary">
-          {DISCLAIMER}
-        </ThemedText>
-      </ScrollView>
-    </ThemedView>
+        </View>
+      ) : null}
+      {run.isError && !dismissed ? (
+        <ErrorBanner message={(run.error as Error).message} onDismiss={() => setDismissed(true)} />
+      ) : null}
+      {body}
+      <ThemedText type="small" themeColor="textSecondary">
+        {DISCLAIMER}
+      </ThemedText>
+    </ScrollScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  content: {
-    padding: Spacing.three,
-    gap: Spacing.three,
-    width: '100%',
-    maxWidth: MaxContentWidth,
-    alignSelf: 'center',
-    paddingBottom: Spacing.six,
-  },
   card: { padding: Spacing.four, borderRadius: Spacing.four, gap: Spacing.three },
   block: { gap: Spacing.two },
   bulletRow: { flexDirection: 'row', gap: Spacing.two },

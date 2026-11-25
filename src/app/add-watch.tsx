@@ -1,12 +1,10 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 
+import { ScrollScreen } from '@/components/layout/scroll-screen';
 import { Button } from '@/components/ui/button';
 import { TextField } from '@/components/ui/text-field';
 import { ThemedText } from '@/components/ui/themed-text';
-import { ThemedView } from '@/components/ui/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAddWatch } from '@/hooks/use-watchlist';
 import { haptic } from '@/lib/haptics';
 
@@ -52,66 +50,43 @@ export default function AddWatchScreen() {
   }
 
   return (
-    <ThemedView style={styles.root}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.root}
-      >
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <TextField
-            label="Ticker"
-            error={errors.ticker}
-            value={ticker}
-            onChangeText={setTicker}
-            placeholder="NVDA"
-            autoCapitalize="characters"
-            autoCorrect={false}
-          />
-          <TextField
-            label="Name (optional)"
-            value={name}
-            onChangeText={setName}
-            placeholder="NVIDIA"
-          />
-          <TextField
-            label="Target price (optional)"
-            error={errors.target}
-            value={target}
-            onChangeText={setTarget}
-            placeholder="500"
-            keyboardType="decimal-pad"
-          />
-          <TextField
-            label="Note (optional)"
-            value={note}
-            onChangeText={setNote}
-            placeholder="Why are you watching it?"
-          />
-          <ThemedText type="small" themeColor="textSecondary">
-            Adding a ticker that is already on the list updates its target and note.
-          </ThemedText>
+    <ScrollScreen avoidKeyboard>
+      <TextField
+        label="Ticker"
+        error={errors.ticker}
+        value={ticker}
+        onChangeText={setTicker}
+        placeholder="NVDA"
+        autoCapitalize="characters"
+        autoCorrect={false}
+      />
+      <TextField label="Name (optional)" value={name} onChangeText={setName} placeholder="NVIDIA" />
+      <TextField
+        label="Target price (optional)"
+        error={errors.target}
+        value={target}
+        onChangeText={setTarget}
+        placeholder="500"
+        keyboardType="decimal-pad"
+      />
+      <TextField
+        label="Note (optional)"
+        value={note}
+        onChangeText={setNote}
+        placeholder="Why are you watching it?"
+      />
+      <ThemedText type="small" themeColor="textSecondary">
+        Adding a ticker that is already on the list updates its target and note.
+      </ThemedText>
 
-          {add.isError ? (
-            <ThemedText themeColor="loss" accessibilityRole="alert">
-              {add.error.message}
-            </ThemedText>
-          ) : null}
+      {add.isError ? (
+        <ThemedText themeColor="loss" accessibilityRole="alert">
+          {add.error.message}
+        </ThemedText>
+      ) : null}
 
-          <Button title="Save" onPress={submit} loading={add.isPending} />
-          <Button title="Cancel" variant="secondary" onPress={close} />
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </ThemedView>
+      <Button title="Save" onPress={submit} loading={add.isPending} />
+      <Button title="Cancel" variant="secondary" onPress={close} />
+    </ScrollScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1 },
-  content: {
-    padding: Spacing.three,
-    gap: Spacing.three,
-    width: '100%',
-    maxWidth: MaxContentWidth,
-    alignSelf: 'center',
-  },
-});
