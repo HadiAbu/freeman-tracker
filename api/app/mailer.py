@@ -46,7 +46,8 @@ class SmtpMailer:
             with self._factory(self._host, self._port, timeout=self._timeout) as smtp:
                 smtp.starttls(context=ssl.create_default_context())
                 smtp.login(self._user, self._password)
-                smtp.send_message(msg)
+                # The envelope is exactly this one address, never whatever the header parses into.
+                smtp.send_message(msg, to_addrs=[to])
         except (smtplib.SMTPException, OSError, ValueError) as e:  # ValueError: e.g. a non-ASCII password
             failure = type(e).__name__
         if failure is not None:

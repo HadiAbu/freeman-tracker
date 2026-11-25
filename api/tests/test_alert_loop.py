@@ -10,9 +10,11 @@ from tests.conftest import make_settings
 
 
 def configured(**over):
-    return make_settings(
-        finnhub_api_key="fh", smtp_user="me@gmail.com", smtp_password="pw", alert_check_seconds=1, **over
+    settings = make_settings(
+        finnhub_api_key="fh", smtp_user="me@gmail.com", smtp_password="pw", **over
     )
+    # model_copy skips validation: 1 s is below the allowed minimum, but keeps these tests fast.
+    return settings.model_copy(update={"alert_check_seconds": 1})
 
 
 def test_it_does_not_start_without_a_market_data_key():

@@ -80,6 +80,18 @@ def latest_price(conn, user_id: int, ticker: str) -> float | None:
     return r["price"] if r else None
 
 
+def latest_market_price(conn, ticker: str) -> float | None:
+    """Newest shared market mark for one ticker, ignoring every user's manual marks, or None."""
+    r = one(
+        conn.execute(
+            "SELECT price FROM prices WHERE ticker = ? AND user_id IS NULL"
+            " ORDER BY as_of DESC, id DESC LIMIT 1",
+            (ticker,),
+        )
+    )
+    return r["price"] if r else None
+
+
 def price_kind(source: str | None) -> str:
     """How a price should be described to the user: typed by hand, or from the market."""
     return "manual" if source in (None, "manual") else "market"

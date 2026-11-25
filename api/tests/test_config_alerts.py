@@ -1,4 +1,35 @@
+import pytest
+from pydantic import ValidationError
+
 from app.config import Settings
+
+
+@pytest.mark.parametrize(
+    "field,bad",
+    [
+        ("alert_check_seconds", 0),
+        ("alert_check_seconds", 9),
+        ("alert_cooldown_seconds", 0),
+        ("alert_cooldown_seconds", 59),
+    ],
+)
+def test_intervals_below_the_minimum_are_rejected(field, bad):
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, **{field: bad})
+
+
+@pytest.mark.parametrize(
+    "field,smallest", [("alert_check_seconds", 10), ("alert_cooldown_seconds", 60)]
+)
+def test_the_minimum_interval_is_accepted(field, smallest):
+    assert getattr(Settings(_env_file=None, **{field: smallest}), field) == smallest
+
+
+@pytest.mark.parametrize("field", ["alert_check_seconds", "alert_cooldown_seconds"])
+def test_a_rejected_interval_is_not_printed(field):
+    with pytest.raises(ValidationError) as e:
+        Settings(_env_file=None, **{field: -987654})
+    assert "-987654" not in str(e.value) and "input_value" not in str(e.value)
 
 
 def test_defaults_match_the_design():

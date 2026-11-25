@@ -46,22 +46,23 @@ def _migrate_alerts(conn) -> None:
     """Price alerts: target_price became upper_limit and each limit gained a state.
 
     A limit the latest known price is already past starts 'triggered', so upgrading never sends an
-    email for something that was true before the feature existed. This runs only the first time
-    (while upper_state is missing): later startups must not re-evaluate states.
+    email for something that was true before the feature existed.
+
+    last_alerted_at doubles as the "evaluation done" marker: it is added only after the evaluation
+    is committed. A start interrupted before that point evaluates again (harmless); once the column
+    exists, later startups never re-evaluate states.
     """
     if "target_price" in _columns(conn, "watchlist") and "upper_limit" not in _columns(conn, "watchlist"):
         conn.execute("ALTER TABLE watchlist RENAME COLUMN target_price TO upper_limit")
     cols = _columns(conn, "watchlist")
-    first_run = "upper_state" not in cols
     for name, ddl in (
         ("lower_limit", "REAL"),
         ("upper_state", "TEXT NOT NULL DEFAULT 'armed'"),
         ("lower_state", "TEXT NOT NULL DEFAULT 'armed'"),
-        ("last_alerted_at", "TEXT"),
     ):
         if name not in cols:
             conn.execute(f"ALTER TABLE watchlist ADD COLUMN {name} {ddl}")
-    if first_run:
+    if "last_alerted_at" not in cols:
         # Same "latest visible price" rule as ledger.latest_marks.
         conn.execute(
             "UPDATE watchlist SET upper_state = 'triggered' WHERE upper_limit IS NOT NULL AND"
@@ -70,6 +71,8 @@ def _migrate_alerts(conn) -> None:
             "  ORDER BY p.as_of DESC, (p.user_id IS NULL) ASC, p.id DESC LIMIT 1)"
             " >= watchlist.upper_limit"
         )
+        conn.commit()  # before the ALTER below, which marks the evaluation as done
+        conn.execute("ALTER TABLE watchlist ADD COLUMN last_alerted_at TEXT")
     if "alert_email" not in _columns(conn, "users"):
         conn.execute("ALTER TABLE users ADD COLUMN alert_email TEXT")
 

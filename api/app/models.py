@@ -40,16 +40,18 @@ class TradePatch(BaseModel):
 class WatchIn(BaseModel):
     ticker: str
     name: Optional[str] = None
-    upper_limit: Optional[float] = Field(default=None, gt=0)  # email when the price reaches it
-    lower_limit: Optional[float] = Field(default=None, gt=0)  # email when it falls to it
+    # allow_inf_nan: JSON 1e400 parses to infinity, which can be stored but never sent back as JSON.
+    # upper_limit: email when the price reaches it. lower_limit: email when it falls to it.
+    upper_limit: Optional[float] = Field(default=None, gt=0, allow_inf_nan=False)
+    lower_limit: Optional[float] = Field(default=None, gt=0, allow_inf_nan=False)
     note: Optional[str] = None
     _t = field_validator("ticker")(_ticker)
 
 
 class WatchPatch(BaseModel):
     name: Optional[str] = None
-    upper_limit: Optional[float] = Field(default=None, gt=0)
-    lower_limit: Optional[float] = Field(default=None, gt=0)
+    upper_limit: Optional[float] = Field(default=None, gt=0, allow_inf_nan=False)
+    lower_limit: Optional[float] = Field(default=None, gt=0, allow_inf_nan=False)
     note: Optional[str] = None
 
 

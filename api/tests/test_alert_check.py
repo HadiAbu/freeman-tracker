@@ -284,3 +284,47 @@ def test_tickers_over_the_cap_are_counted_not_silently_dropped(db_conn):
     quotes = FakeQuotes(prices)
     r = check(db_conn, quotes, FakeMailer())
     assert r.skipped_tickers == 2 and len(quotes.calls) == 50
+
+
+def write_through_a_second_connection(path):
+    """What a request handler does while the checker runs: its own connection, one small write."""
+    from app.db import connect
+
+    other = connect(path)
+    other.execute("INSERT INTO holdings (user_id, ticker) VALUES (999, 'OTHER')")
+    other.commit()
+
+
+def test_no_write_transaction_is_open_while_quotes_are_fetched(db_conn, tmp_path):
+    uid = add_user(db_conn, "a@x.com")
+    add_watch(db_conn, uid, "AAA", upper=1000)
+    add_watch(db_conn, uid, "BBB", upper=1000)
+
+    class WritingQuotes(FakeQuotes):
+        def quote(self, ticker):
+            if len(self.calls) == 1:  # the second call: the first quote has already arrived
+                write_through_a_second_connection(str(tmp_path / "unit.db"))
+            return super().quote(ticker)
+
+    quotes = WritingQuotes({"AAA": 1, "BBB": 2})
+    check(db_conn, quotes, FakeMailer())
+    assert quotes.calls == ["AAA", "BBB"]
+    assert db_conn.execute("SELECT ticker, price FROM prices ORDER BY ticker").fetchall() == [
+        ("AAA", 1.0),
+        ("BBB", 2.0),
+    ]
+
+
+def test_a_rearm_is_committed_before_a_later_email_is_sent(db_conn, tmp_path):
+    uid = add_user(db_conn, "a@x.com")
+    add_watch(db_conn, uid, "AAA", upper=100, upper_state="triggered")  # back inside: re-arms
+    add_watch(db_conn, uid, "BBB", upper=1)  # emails later in the same cycle
+
+    class WritingMailer(FakeMailer):
+        def send(self, to, subject, body):
+            write_through_a_second_connection(str(tmp_path / "unit.db"))
+            super().send(to, subject, body)
+
+    r = check(db_conn, FakeQuotes({"AAA": 50, "BBB": 2}), WritingMailer())
+    assert (r.rearmed, r.sent) == (1, 1)
+    assert state(db_conn, "AAA")[0] == "armed"

@@ -58,3 +58,49 @@ def test_running_the_migration_again_changes_nothing(tmp_path):
     assert before["AAPL"][1] == "armed"
     init_schema(conn)  # a second start must not re-evaluate states
     assert limits(conn) == before
+
+
+def test_a_migration_interrupted_before_the_evaluation_is_finished_on_the_next_start(tmp_path):
+    conn = seeded(tmp_path)
+    # The state a crash leaves behind: the ALTERs autocommitted, the evaluation UPDATE never did,
+    # and the column added after it does not exist yet.
+    conn.execute("ALTER TABLE prices ADD COLUMN user_id INTEGER")
+    conn.execute("UPDATE prices SET user_id = 1")
+    conn.execute("ALTER TABLE watchlist RENAME COLUMN target_price TO upper_limit")
+    for ddl in (
+        "lower_limit REAL",
+        "upper_state TEXT NOT NULL DEFAULT 'armed'",
+        "lower_state TEXT NOT NULL DEFAULT 'armed'",
+    ):
+        conn.execute(f"ALTER TABLE watchlist ADD COLUMN {ddl}")
+    conn.commit()
+    assert "last_alerted_at" not in columns(conn, "watchlist")
+
+    init_schema(conn)
+    assert limits(conn)["AAPL"][1] == "triggered"
+    assert limits(conn)["NVDA"][1] == "armed"
+    assert "last_alerted_at" in columns(conn, "watchlist")
+
+
+def test_the_evaluation_is_committed_before_the_column_that_marks_it_done_is_added(tmp_path):
+    conn = seeded(tmp_path)
+    committed_state_seen = []
+
+    class Watching:
+        """Looks from a second connection just before last_alerted_at is added."""
+
+        def execute(self, sql, *args):
+            if "ADD COLUMN last_alerted_at" in sql:
+                other = connect(str(tmp_path / "legacy.db"))
+                committed_state_seen.append(
+                    other.execute(
+                        "SELECT upper_state FROM watchlist WHERE ticker = 'AAPL'"
+                    ).fetchone()
+                )
+            return conn.execute(sql, *args)
+
+        def commit(self):
+            conn.commit()
+
+    init_schema(Watching())
+    assert committed_state_seen == [("triggered",)]

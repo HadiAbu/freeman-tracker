@@ -115,6 +115,7 @@ def run_check(
     )
 
     fetched: dict[str, Quote] = {}
+    from_provider: list[Quote] = []  # saved after the loop, so no write is open while we wait
     started = time.monotonic()
     tickers = list(dict.fromkeys(i["ticker"] for i in items))
     result.skipped_tickers = max(0, len(tickers) - MAX_TICKERS)
@@ -135,9 +136,14 @@ def run_check(
                 result.quote_failures += 1
                 continue
             cache.put(quote)
-            store_market_price(conn, quote)
+            from_provider.append(quote)
         fetched[ticker] = quote
-    conn.commit()  # end the write transaction the market-price stores opened, before any email
+
+    # A write transaction must never stay open across network I/O (quotes or mail): until it ends,
+    # every other writer fails with "database is locked". So: one short burst, then commit.
+    for quote in from_provider:
+        store_market_price(conn, quote)
+    conn.commit()
 
     emails = 0
     for item in items:
@@ -156,6 +162,7 @@ def run_check(
                     f" WHERE id = ? AND {side}_limit = ? AND {side}_state = 'triggered'",
                     (item["id"], limit),
                 )
+                conn.commit()  # a later send must not run with this write still open
                 result.rearmed += 1 if cur.rowcount == 1 else 0  # 0: edited meanwhile, leave it
             elif action == "send":
                 if not item["alert_email"] or mailer is None:
@@ -180,5 +187,4 @@ def run_check(
                 # Commit now: if a later send raises something unexpected, this email must not be
                 # re-sent every cycle because its state was never saved.
                 conn.commit()
-    conn.commit()
     return result

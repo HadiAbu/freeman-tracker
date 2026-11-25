@@ -28,8 +28,8 @@ class FakeSMTP:
         if FakeSMTP.fail_on == "login":
             raise smtplib.SMTPAuthenticationError(535, b"bad credentials for hunter2")
 
-    def send_message(self, msg):
-        FakeSMTP.log.append(("send", msg))
+    def send_message(self, msg, to_addrs=None):
+        FakeSMTP.log.append(("send", msg, to_addrs))
 
 
 @pytest.fixture(autouse=True)
@@ -49,7 +49,8 @@ def test_it_connects_secures_the_link_logs_in_then_sends():
     mailer().send("you@example.com", "Subject here", "Body here")
     assert [e[0] for e in FakeSMTP.log] == ["connect", "starttls", "login", "send"]
     assert FakeSMTP.log[0] == ("connect", "smtp.gmail.com", 587, 10.0)
-    msg = FakeSMTP.log[-1][1]
+    msg, to_addrs = FakeSMTP.log[-1][1:]
+    assert to_addrs == ["you@example.com"]  # the envelope is exactly the one address asked for
     assert (msg["From"], msg["To"], msg["Subject"]) == ("me@gmail.com", "you@example.com", "Subject here")
     assert "Body here" in msg.get_content()
 

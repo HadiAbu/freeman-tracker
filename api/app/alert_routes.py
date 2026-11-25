@@ -13,9 +13,12 @@ from app.mailer import MailError, Mailer, SmtpMailer
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
-# Deliberately simple: one @, no spaces or control characters, a dot in the domain. A typo is
-# caught by the test email, not by a clever regex.
+# Deliberately simple: one @, no whitespace, a dot in the domain. A typo is caught by the test
+# email, not by a clever regex.
 _EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+# Also refused anywhere in the address: control characters and mail header syntax. A header reads
+# some of these as list or grouping syntax, so one saved value could become two recipients.
+_UNSAFE = re.compile(r'[\x00-\x20\x7f,;:<>()\[\]\\"]')
 
 
 class AlertSettingsIn(BaseModel):
@@ -29,7 +32,7 @@ class AlertSettingsIn(BaseModel):
         v = v.strip()
         if v == "":
             return None
-        if len(v) > 254 or not _EMAIL.match(v):
+        if len(v) > 254 or _UNSAFE.search(v) or not _EMAIL.match(v):
             raise ValueError("Enter a valid email address.")
         return v
 

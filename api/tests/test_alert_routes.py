@@ -42,6 +42,36 @@ def test_a_bad_address_is_rejected(client, bad):
     assert client.put("/alerts/settings", json={"email": bad}).status_code == 422
 
 
+@pytest.mark.parametrize(
+    "char",
+    [",", ";", "<", ">", "(", ")", "[", "]", "\\", '"', ":", "\x00", "\x01", "\x1b", "\x1f", "\x7f"],
+)
+@pytest.mark.parametrize("template", ["a{}b@example.com", "me@exam{}ple.com"])
+def test_a_character_that_could_change_the_recipients_is_rejected(client, char, template):
+    r = client.put("/alerts/settings", json={"email": template.format(char)})
+    assert r.status_code == 422, r.text
+    assert client.get("/alerts/settings").json()["email"] is None
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        "me@mail.com,evil.example",  # a list: two recipients from one saved value
+        "me,you@mail.com",
+        "me;you@mail.com",
+        "<me@mail.com>",
+        "me@mail.com(comment)",
+    ],
+)
+def test_a_value_that_reads_as_a_list_or_header_syntax_is_rejected(client, bad):
+    assert client.put("/alerts/settings", json={"email": bad}).status_code == 422
+
+
+@pytest.mark.parametrize("good", ["first.last+tag@sub.example.co.uk", "o'brien_1-2@example.io"])
+def test_ordinary_addresses_are_still_accepted(client, good):
+    assert client.put("/alerts/settings", json={"email": good}).json()["email"] == good
+
+
 def test_each_account_has_its_own_address(client):
     bob = client.new_user("bob@example.com")
     client.put("/alerts/settings", json={"email": "alice@mail.com"})
