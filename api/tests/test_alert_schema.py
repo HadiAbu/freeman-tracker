@@ -51,9 +51,10 @@ def test_target_price_becomes_the_upper_limit_and_a_reached_one_starts_triggered
 def test_running_the_migration_again_changes_nothing(tmp_path):
     conn = seeded(tmp_path)
     init_schema(conn)
-    conn.execute("INSERT INTO prices (user_id, ticker, price, as_of) VALUES (1, 'AAPL', 100, '2026-03-01')")
+    # AAPL's price (150) is still at its limit, so re-evaluating would flip this back to triggered.
     conn.execute("UPDATE watchlist SET upper_state = 'armed' WHERE ticker = 'AAPL'")
     conn.commit()
     before = limits(conn)
+    assert before["AAPL"][1] == "armed"
     init_schema(conn)  # a second start must not re-evaluate states
     assert limits(conn) == before
