@@ -47,7 +47,7 @@ test('says plainly when the server has no email settings, and disables the test 
 test('saves a trimmed address', async () => {
   getSettings.mockResolvedValue({ email: null, email_configured: true });
   await renderWithClient(<AlertSettingsScreen />);
-  await waitFor(() => expect(getSettings).toHaveBeenCalled());
+  await screen.findByLabelText('Send alerts to');
   await fireEvent.changeText(field(), '  new@mail.com ');
   await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
   await waitFor(() => expect(saveSettings).toHaveBeenCalledWith('new@mail.com'));
