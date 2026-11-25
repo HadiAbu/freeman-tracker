@@ -34,25 +34,25 @@ const changed = (a: readonly unknown[] = [], b: readonly unknown[] = []) =>
  * lands on the route-level `ErrorBoundary` exported from `src/app/_layout.tsx`.
  */
 export class ErrorBoundary extends React.Component<Props, State> {
-  state: State = { error: null };
+  override state: State = { error: null };
 
   static getDerivedStateFromError(error: Error): State {
     return { error };
   }
 
-  componentDidCatch(error: Error, info: React.ErrorInfo) {
+  override componentDidCatch(error: Error, info: React.ErrorInfo) {
     if (this.props.onError) this.props.onError(error, info);
     else reportError(error, { componentStack: info.componentStack });
   }
 
-  componentDidUpdate(prev: Props) {
+  override componentDidUpdate(prev: Props) {
     // Only reset after a failure; resetting a healthy boundary would remount nothing but cost a render.
     if (this.state.error && changed(prev.resetKeys, this.props.resetKeys)) this.reset();
   }
 
   reset = () => this.setState({ error: null });
 
-  render() {
+  override render() {
     const { error } = this.state;
     if (!error) return this.props.children;
 

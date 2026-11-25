@@ -22,13 +22,7 @@ jest.mock('expo-router', () => {
     return null;
   };
   // Records the guard so a test can check which side of the route guard is open.
-  Stack.Protected = function Protected({
-    guard,
-    children,
-  }: {
-    guard: boolean;
-    children?: React.ReactNode;
-  }) {
+  Stack.Protected = function Protected({ guard }: { guard: boolean; children?: React.ReactNode }) {
     return <Text>{`guard:${guard}`}</Text>;
   };
   return { Stack };
