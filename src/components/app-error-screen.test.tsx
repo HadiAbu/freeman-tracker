@@ -4,7 +4,7 @@ import React from 'react';
 import { AppErrorScreen } from '@/components/app-error-screen';
 
 const mockReport = jest.fn();
-jest.mock('@/lib/monitoring', () => ({ reportError: (e: unknown) => mockReport(e) }));
+jest.mock('@/lib/error-reporting', () => ({ reportError: (e: unknown) => mockReport(e) }));
 
 test('shows a generic message, never the raw error, and reports it', async () => {
   const error = new Error('secret internal detail');

@@ -17,8 +17,8 @@ below; do not edit numbers by hand.
 | android | 7074 KB | 4956 KB | 46 |
 | ios | 7006 KB | 4004 KB | 42 |
 
-This baseline already includes `@sentry/react-native`. The size before Sentry was not measured, so
-its cost is unknown. Measure it before the next dependency is added.
+This baseline was taken with `@sentry/react-native` installed; Sentry was removed in phase 11 (see
+"Sentry removed" below for the size after).
 
 ## Changes
 

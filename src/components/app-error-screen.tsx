@@ -5,14 +5,14 @@ import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { reportError } from '@/lib/monitoring';
+import { reportError } from '@/lib/error-reporting';
 
 type Props = { error: Error; retry: () => Promise<void> | void };
 
 /**
  * Fallback for an uncaught render error. Expo Router renders this in place of the broken route
  * when it is exported as `ErrorBoundary` from a layout. The message is deliberately generic:
- * the real error goes to monitoring, not to the screen.
+ * the real error goes to `reportError`, not to the screen.
  */
 export function AppErrorScreen({ error, retry }: Props) {
   useEffect(() => {

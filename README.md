@@ -26,13 +26,11 @@ asset class (these drive the Sector and Asset class views).
 
    ```
    EXPO_PUBLIC_API_URL=http://<your-LAN-IP>:8000
-   # optional: crash reports (Sentry). Leave unset in development.
-   EXPO_PUBLIC_SENTRY_DSN=
    ```
 
    `EXPO_PUBLIC_*` values are bundled into the app and readable by anyone who has it, so they must
-   never be secrets. Neither of these is: the API address is public, and a Sentry DSN is designed to
-   be public. Access to data is by signing in; there is no key in the app.
+   never be secrets. The API address is not one: it is public. Access to data is by signing in; there
+   is no key in the app.
 3. Install and start:
 
    ```bash

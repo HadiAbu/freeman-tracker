@@ -4,14 +4,6 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 
-// Crash reporting is inert in tests (no DSN) and the real SDK is ESM plus native code, so stub it.
-jest.mock('@sentry/react-native', () => ({
-  init: jest.fn(),
-  setTag: jest.fn(),
-  captureException: jest.fn(),
-  addBreadcrumb: jest.fn(),
-}));
-
 // The keychain does not exist in Jest. An in-memory stand-in with the same async API; tests that
 // need a clean slate call `__reset` (see src/test-utils/session.ts).
 jest.mock('expo-secure-store', () => {

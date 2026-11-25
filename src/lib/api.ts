@@ -15,7 +15,6 @@ import type {
   Trade,
   WatchItem,
 } from '@/types';
-import { recordApiFailure } from '@/lib/monitoring';
 import { AuthError, getAccessToken, refreshSession } from '@/lib/session';
 
 // The API address is public. Access is by a per-user token (see lib/session), never a secret
@@ -106,7 +105,6 @@ async function request<T>(
     }
 
     if (!res.ok) {
-      recordApiFailure(path.split('?')[0], res.status);
       let message = `Request failed (${res.status})`;
       try {
         message = detailToMessage((await res.json()).detail) ?? message;

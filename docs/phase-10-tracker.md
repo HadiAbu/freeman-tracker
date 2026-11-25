@@ -28,6 +28,9 @@ Status key: `[ ]` not started, `[~]` in progress, `[x]` done and verified, `[-]`
 ## Plan and must-haves
 
 ### 2. Error monitoring
+> **Superseded in phase 11:** Sentry was removed. Errors are reported through a local-only `reportError`
+> (`src/lib/error-reporting.ts`). The items below describe what phase 10 built.
+
 Must have:
 - [x] Root error boundary with a recovery screen (Expo Router `ErrorBoundary` export in `_layout.tsx`).
 - [x] Sentry initialised from `EXPO_PUBLIC_SENTRY_DSN`; does nothing when the DSN is unset (dev, tests, CI).

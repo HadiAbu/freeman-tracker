@@ -7,14 +7,10 @@ import { useColorScheme } from 'react-native';
 import { AppErrorScreen } from '@/components/app-error-screen';
 import { PriceAutoRefresh } from '@/components/price-auto-refresh';
 import { AnimatedSplashOverlay } from '@/components/splash-overlay';
-import { initMonitoring } from '@/lib/monitoring';
 import { PERSIST_BUSTER, PERSIST_MAX_AGE, queryClient, queryPersister } from '@/lib/query-client';
 import { restoreSession } from '@/lib/session';
 import { useStoresReady } from '@/stores';
 import { useAuth } from '@/stores/auth';
-
-// Runs once at startup, before the first render, so errors during launch are captured too.
-initMonitoring();
 
 // Expo Router renders this instead of the route when a screen throws while rendering.
 export const ErrorBoundary = AppErrorScreen;

@@ -17,17 +17,12 @@ Builds do not read `.env.local`. Set these per environment, once each:
 
 ```bash
 eas env:set --name EXPO_PUBLIC_API_URL    --value https://<api-host> --environment preview --visibility plaintext
-eas env:set --name EXPO_PUBLIC_SENTRY_DSN --value <dsn>              --environment preview --visibility plaintext
 # repeat for --environment production (and development if you build dev clients)
 ```
 
-Neither value is a secret (both end up in the bundle). **There is no API key any more**: the app
+The value is not a secret (it ends up in the bundle). **There is no API key any more**: the app
 signs in with an account. Delete `EXPO_PUBLIC_API_KEY` from every environment
 (`eas env:delete`), and rotate the old shared key on the server by removing `API_KEY` from its `.env`.
-
-For readable crash reports, also set `SENTRY_AUTH_TOKEN` as a **sensitive** variable so builds can
-upload source maps, and `organization`/`project` on the `@sentry/react-native` plugin in `app.json`
-(or `SENTRY_ORG` / `SENTRY_PROJECT`). After `eas update`, run `npx sentry-expo-upload-sourcemaps dist`.
 
 Server side: the API needs `JWT_SECRET` (see `api/.env.example`) and an account created with
 `python -m scripts.create_user`. Run the API database migration by simply starting the new server:
@@ -72,10 +67,10 @@ A **staged OTA rollout** sends an update to a percentage of installed builds fir
 eas update --branch production --environment production --message "What changed" --rollout-percentage 10
 ```
 
-Check it before widening. In Sentry, filter issues by the tag `expo-update-id` set to the new update
-(every event carries it, along with `release-channel`) and compare against the previous update: a new
-issue that appears only on this update, or a visibly worse crash-free rate, is the reason to stop. Then
-widen or stop it:
+Check it before widening. There is no crash reporting service: caught errors are logged in development
+only (`src/lib/error-reporting.ts`), so the signal is the people on the update. Use the build yourself, ask
+the first testers, and check `eas update:view` for the update's install count. If the app shows the
+"Something went wrong" screen or anything looks wrong, stop. Then widen or stop it:
 
 ```bash
 eas update:edit                      # interactive: pick the update, set a new percentage (100 finishes it)
