@@ -5,7 +5,9 @@ CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   email TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  -- Where price alerts are sent. Separate from the login email, which can be a placeholder.
+  alert_email TEXT
 );
 
 -- Opaque refresh tokens, stored only as a SHA-256 hash. A token is single use: refreshing
@@ -46,12 +48,19 @@ CREATE TABLE IF NOT EXISTS trades (
 );
 CREATE INDEX IF NOT EXISTS idx_trades_user_ticker ON trades (user_id, ticker, traded_at);
 
+-- upper_limit / lower_limit: email the user when the price reaches them. A state is 'armed'
+-- (will email on the next crossing) or 'triggered' (already past the limit, quiet until the price
+-- crosses back). last_alerted_at is when this item last sent an email.
 CREATE TABLE IF NOT EXISTS watchlist (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL,
   ticker TEXT NOT NULL,
   name TEXT,
-  target_price REAL,
+  upper_limit REAL,
+  lower_limit REAL,
+  upper_state TEXT NOT NULL DEFAULT 'armed',
+  lower_state TEXT NOT NULL DEFAULT 'armed',
+  last_alerted_at TEXT,
   note TEXT,
   UNIQUE (user_id, ticker)
 );
