@@ -13,7 +13,9 @@
     "test:ci": "jest --ci --coverage",
     "typecheck": "tsc --noEmit",
     "perf:bundle": "node scripts/perf-bundle.mjs",
-    "e2e": "maestro test .maestro"
+    "e2e": "maestro test .maestro",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
@@ -62,8 +64,10 @@
     "@types/react": "~19.3.0",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~58.0.4",
+    "eslint-config-prettier": "^10.1.8",
     "jest": "~30.5.2",
     "jest-expo": "~58.0.15",
+    "prettier": "^3.10.1",
     "typescript": "~6.0.3"
   },
   "private": true

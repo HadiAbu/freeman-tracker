@@ -3,11 +3,11 @@ import {
   TabList,
   TabTrigger,
   TabSlot,
-  TabTriggerSlotProps,
-  TabListProps,
+  type TabTriggerSlotProps,
+  type TabListProps,
 } from 'expo-router/ui';
 import React from 'react';
-import { Pressable, PressableProps, View, StyleSheet } from 'react-native';
+import { Pressable, type PressableProps, View, StyleSheet } from 'react-native';
 
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
