@@ -1,11 +1,18 @@
-import pytest
-from fastapi.testclient import TestClient
-
-from app import auth_routes, main
-from app.config import Settings, get_settings
-from app.db import connect, get_conn, init_schema
+import os
 
 SECRET = "test-secret-" + "x" * 40
+
+# `app.main` reads the settings when it is imported, which would load the developer's real
+# .env (and refuse to start on a weak JWT_SECRET there). Environment variables win over the
+# .env file, so pin the test secret first: the suite must not depend on private local config.
+os.environ["JWT_SECRET"] = SECRET
+
+import pytest  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
+
+from app import auth_routes, main  # noqa: E402
+from app.config import Settings, get_settings  # noqa: E402
+from app.db import connect, get_conn, init_schema  # noqa: E402
 PASSWORD = "correct horse battery"
 
 

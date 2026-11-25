@@ -35,7 +35,8 @@ Send `Authorization: Bearer <access_token>` on every request except `/health` an
 | `POST /auth/register` | Only when `ALLOW_REGISTRATION=true`; 403 otherwise. Prefer `scripts.create_user`. |
 
 Passwords are hashed with argon2id. Refresh tokens are stored only as SHA-256 hashes. With
-`JWT_SECRET` unset the server fails closed (503).
+`JWT_SECRET` unset the server fails closed (503); a `JWT_SECRET` shorter than 32 characters stops the
+server from starting (the error says how long it was, never what it was).
 
 **Upgrading a database from the single-user version.** All existing data is owned by user id 1, and
 existing price marks are assigned to id 1 on startup. The first account you create gets id 1 and so
