@@ -16,12 +16,16 @@ On the watchlist, let a user set an **upper limit** and a **lower limit** per st
 | After an alert fires | Fire once; re-arm when the price is back inside the limits |
 | Existing `target_price` | Becomes the upper limit. A new lower limit is added. |
 | Alert email address | Set in the app (per account), with a "Send test email" button |
+| Check interval | Every 2 minutes (`ALERT_CHECK_SECONDS=120`) |
+| Cooldown | At most one email per limit per hour, so a price flickering around a limit cannot flood the inbox |
+| Scope | Watchlist items only. Held positions carry no limits. |
+| Email content | Detailed: company, price, limit, how far past it, change since yesterday's close, both limits, your note, price time |
 | Push notifications | Dropped. Email only. |
 
 ## Out of scope (for now)
 
-Push notifications and SMS; percentage-move or volume alerts; alert history; checks while the server
-is off (a hosted server or a scheduled job would fix that and needs no redesign: the check is one
+Push notifications and SMS; alerts on held positions; percentage-move or volume alerts; alert history;
+holdings or cost basis in an email (email is not private); checks while the server is off (a hosted server or a scheduled job would fix that and needs no redesign: the check is one
 plain function).
 
 ## Data model
@@ -52,13 +56,14 @@ users
 ## The check
 
 A pure function `run_check(conn, quotes, mailer, now)` plus a thin loop that calls it every
-`ALERT_CHECK_SECONDS` (default 300) on a daemon thread started with the app. Each cycle opens its own
+`ALERT_CHECK_SECONDS` (default 120) on a daemon thread started with the app. Each cycle opens its own
 database connection.
 
 ```text
 tickers = every ticker with a limit, across all users, deduplicated, at most 50
-for each ticker: quote it (shared 120 s cache, same Finnhub provider as price refresh); also store
-                 the price as today's market mark so the app is fresh
+for each ticker: quote it (same Finnhub provider; accepts a cached quote at most 60 s old, so a
+                 2-minute cycle never sees a stale price); also store the price as today's
+                 market mark so the app is fresh
 for each limit on that ticker:
     beyond = price >= upper_limit        (or price <= lower_limit)
     if beyond and state == armed and cooldown (1 hour since last_alerted_at) has passed:
@@ -72,18 +77,38 @@ for each limit on that ticker:
 - If the account has no `alert_email`, or the server has no SMTP settings, the alert stays armed (it is
   not silently dropped) and the settings screen says why.
 - At most 20 emails per cycle.
+- Finnhub's free tier allows 60 calls a minute. A full 50-ticker cycle every 2 minutes is about 25 a
+  minute, which leaves room for a manual refresh from the app at the same time; the 50-ticker cap
+  stays. Outside market hours the price does not change, so the quotes are wasted but harmless; skipping
+  them is a possible later optimisation, not part of this work.
 - The loop starts with the server. With no SMTP settings it logs one line and does nothing else.
 
 ## Email
 
 `smtplib`, 10 s timeout. Settings: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`,
-`SMTP_FROM`. The password is never logged. Content holds only a ticker, a price and a limit, built
-from a validated ticker and numbers, so there is no header injection. Never holdings or share counts:
+`SMTP_FROM`. The password is never logged. Plain text. The subject holds only the validated ticker and
+numbers; free text (the company name and your note) appears in the body only, with control characters
+stripped, so there is no header injection.
 
 ```text
-Subject: AAPL rose above your upper limit
-AAPL is $190.12, above your upper limit of $190.00.
+Subject: AAPL rose above your upper limit ($190.00)
+
+Apple Inc (AAPL) is $190.12, above your upper limit of $190.00 (+0.06%).
+
+Today:        +1.8% vs yesterday's close of $186.76
+Your limits:  lower $150.00 · upper $190.00
+Your note:    Wait for earnings
+Price as of:  2026-11-25 15:42 UTC (Finnhub)
+
+You will be emailed again only after the price returns between your limits and
+crosses one again (at most once an hour). Change or remove limits in the app.
 ```
+
+- A lower-limit email reads "fell below your lower limit" with the same details.
+- Lines whose data is missing are left out (no note, no previous close, only one limit set).
+- Never included: share counts, cost basis, balances, or portfolio value.
+- This needs one small change to the quote: `Quote` gets an optional `previous_close` (Finnhub's
+  `pc` field), validated like the price. It defaults to `None`, so nothing else that uses `Quote` changes.
 
 ## API (all authenticated, all scoped to the signed-in user)
 
@@ -112,6 +137,8 @@ AAPL is $190.12, above your upper limit of $190.00.
 
 ## Testing (TDD)
 
+- **Email text:** each field renders, missing fields are left out, newlines in a note cannot reach the
+  subject, the lower-limit wording, and no holdings appear.
 - **State machine:** fires once, re-arms, respects the cooldown, a failed send retries and stays armed,
   no address keeps it armed.
 - **Migration:** `target_price` becomes `upper_limit`; an existing limit already beyond the latest
