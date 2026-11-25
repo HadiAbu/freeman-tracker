@@ -17,8 +17,8 @@ below; do not edit numbers by hand.
 | android | 7074 KB | 4956 KB | 46 |
 | ios | 7006 KB | 4004 KB | 42 |
 
-This baseline was taken with `@sentry/react-native` installed; Sentry was removed in phase 11 (see
-"Sentry removed" below for the size after).
+This baseline was taken with `@sentry/react-native` installed, before the account and market-price
+code was added. See "Sentry removed" below for the size after it was taken out.
 
 ## Changes
 
@@ -33,3 +33,17 @@ This baseline was taken with `@sentry/react-native` installed; Sentry was remove
 - The Watchlist list has the same pattern as Trades (inline `renderItem`, inline separator, unmemoized
   row). Not changed yet. The Portfolio holdings are mapped inside a `ScrollView`, not a `FlatList`;
   fine for tens of holdings, would need virtualizing at hundreds.
+
+## Sentry removed (phase 11, 2026-11-25)
+
+Measured with `npm run perf:bundle` after removing `@sentry/react-native`. This build also contains
+the phase 10 accounts and market-price code that the baseline above predates, so the drop is
+Sentry's cost minus what those features added.
+
+| Platform | JS bundle (Hermes) | Baseline | Change   |
+| -------- | ------------------ | -------- | -------- |
+| android  | 5093 KB            | 7074 KB  | -1981 KB |
+| ios      | 5023 KB            | 7006 KB  | -1983 KB |
+
+Assets are unchanged (android 4956 KB in 46 files, ios 4004 KB in 42 files). Native code size (the
+Sentry SDK's native modules) is not part of this number and was not measured.
