@@ -80,3 +80,15 @@ def test_a_header_with_a_newline_is_refused_not_sent():
     with pytest.raises(MailError):
         mailer().send("you@example.com", "Subject\r\nBcc: x@y.com", "b")
     assert not any(e[0] == "send" for e in FakeSMTP.log)
+
+
+def test_a_non_ascii_credential_becomes_a_mail_error_that_never_shows_it():
+    class AsciiFail(FakeSMTP):
+        def login(self, user, password):
+            raise UnicodeEncodeError("ascii", "pässword", 1, 2, "ordinal not in range")
+
+    m = SmtpMailer("h", 587, "u", "pässword", "u", smtp_factory=AsciiFail)
+    with pytest.raises(MailError) as e:
+        m.send("you@example.com", "s", "b")
+    assert "UnicodeEncodeError" in str(e.value)
+    assert "pässword" not in str(e.value)

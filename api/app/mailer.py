@@ -47,7 +47,7 @@ class SmtpMailer:
                 smtp.starttls(context=ssl.create_default_context())
                 smtp.login(self._user, self._password)
                 smtp.send_message(msg)
-        except (smtplib.SMTPException, OSError) as e:
+        except (smtplib.SMTPException, OSError, ValueError) as e:  # ValueError: e.g. a non-ASCII password
             failure = type(e).__name__
         if failure is not None:
             # Raised outside the except block so the original error (which may quote the server's
