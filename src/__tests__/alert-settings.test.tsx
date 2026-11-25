@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import React from 'react';
 
 import AlertSettingsScreen from '@/app/alert-settings';
@@ -94,4 +94,25 @@ test('the test button waits for unsaved changes to be saved first', async () => 
     screen.getByRole('button', { name: 'Send test email' }).props.accessibilityState.disabled,
   ).toBe(true);
   expect(screen.getByText('Save your change before sending a test.')).toBeTruthy();
+});
+
+test('keeps the form when a background refetch fails and cached settings exist', async () => {
+  const { client } = await renderWithClient(<AlertSettingsScreen />);
+  await waitFor(() => expect(field().props.value).toBe('me@mail.com'));
+  getSettings.mockRejectedValueOnce(new Error('network down'));
+  await act(async () => {
+    await client.invalidateQueries({ queryKey: ['alert-settings'] });
+    await new Promise((resolve) => setTimeout(resolve, 0)); // let the query notification reach React
+  });
+  expect(getSettings).toHaveBeenCalledTimes(2);
+  expect(client.getQueryState(['alert-settings'])?.status).toBe('error');
+  expect(field().props.value).toBe('me@mail.com');
+  expect(screen.queryByText('Something went wrong')).toBeNull();
+});
+
+test('shows the error state when the first load fails', async () => {
+  getSettings.mockRejectedValue(new Error('network down'));
+  await renderWithClient(<AlertSettingsScreen />);
+  expect(await screen.findByText('Something went wrong')).toBeTruthy();
+  expect(screen.getByText('network down')).toBeTruthy();
 });

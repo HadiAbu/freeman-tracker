@@ -24,7 +24,8 @@ export default function AlertSettingsScreen() {
   const [error, setError] = useState<string | undefined>();
 
   if (settings.isPending) return <LoadingState />;
-  if (settings.isError)
+  // A failed background refetch keeps the cached data: only fall back to the error screen when there is nothing to show.
+  if (settings.isError && settings.data === undefined)
     return <ErrorState error={settings.error} onRetry={() => settings.refetch()} />;
 
   const saved = settings.data.email ?? '';
