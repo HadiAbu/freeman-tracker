@@ -69,6 +69,7 @@ class CheckResult:
     waiting_for_destination: int = 0  # reached, but no address (or no mail server) to send to
     quote_failures: int = 0
     rearmed: int = 0
+    skipped_tickers: int = 0  # over MAX_TICKERS, not checked this cycle
 
 
 def _details(item: dict, side: str, quote: Quote, now: datetime, cooldown_seconds: int) -> AlertDetails:
@@ -115,7 +116,13 @@ def run_check(
 
     fetched: dict[str, Quote] = {}
     started = time.monotonic()
-    for ticker in list(dict.fromkeys(i["ticker"] for i in items))[:MAX_TICKERS]:
+    tickers = list(dict.fromkeys(i["ticker"] for i in items))
+    result.skipped_tickers = max(0, len(tickers) - MAX_TICKERS)
+    if result.skipped_tickers:
+        log.warning(
+            "price alerts: %s tickers over the %s cap were not checked", result.skipped_tickers, MAX_TICKERS
+        )
+    for ticker in tickers[:MAX_TICKERS]:
         quote = cache.get(ticker, max_age=QUOTE_MAX_AGE)
         if quote is None:
             if time.monotonic() - started > BUDGET_SECONDS:
@@ -130,6 +137,7 @@ def run_check(
             cache.put(quote)
             store_market_price(conn, quote)
         fetched[ticker] = quote
+    conn.commit()  # end the write transaction the market-price stores opened, before any email
 
     emails = 0
     for item in items:
@@ -143,8 +151,12 @@ def run_check(
                 continue
             action = decide(side, item[f"{side}_state"], quote.price, limit, last, now, cooldown_seconds)
             if action == "rearm":
-                conn.execute(f"UPDATE watchlist SET {side}_state = 'armed' WHERE id = ?", (item["id"],))
-                result.rearmed += 1
+                cur = conn.execute(
+                    f"UPDATE watchlist SET {side}_state = 'armed'"
+                    f" WHERE id = ? AND {side}_limit = ? AND {side}_state = 'triggered'",
+                    (item["id"], limit),
+                )
+                result.rearmed += 1 if cur.rowcount == 1 else 0  # 0: edited meanwhile, leave it
             elif action == "send":
                 if not item["alert_email"] or mailer is None:
                     result.waiting_for_destination += 1
@@ -160,9 +172,10 @@ def run_check(
                     continue
                 emails += 1
                 result.sent += 1
-                conn.execute(
-                    f"UPDATE watchlist SET {side}_state = 'triggered', last_alerted_at = ? WHERE id = ?",
-                    (now.isoformat(), item["id"]),
+                conn.execute(  # no match means the limit changed meanwhile: leave that change alone
+                    f"UPDATE watchlist SET {side}_state = 'triggered', last_alerted_at = ?"
+                    f" WHERE id = ? AND {side}_limit = ? AND {side}_state = 'armed'",
+                    (now.isoformat(), item["id"], limit),
                 )
                 # Commit now: if a later send raises something unexpected, this email must not be
                 # re-sent every cycle because its state was never saved.

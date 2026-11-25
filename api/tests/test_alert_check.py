@@ -232,3 +232,55 @@ def test_an_unexpected_error_mid_cycle_keeps_the_emails_already_sent_committed(d
     other = connect(str(tmp_path / "unit.db"))
     assert state(other, "AAA")[0] == "triggered"
     assert state(other, "BBB")[0] == "armed"
+
+
+def test_a_limit_edited_during_the_cycle_is_not_overwritten(db_conn, tmp_path):
+    from app.db import connect
+
+    uid = add_user(db_conn, "a@x.com")
+    add_watch(db_conn, uid, upper=190, upper_state="triggered")
+
+    class EditingQuotes(FakeQuotes):
+        def quote(self, ticker):
+            other = connect(str(tmp_path / "unit.db"))
+            other.execute("UPDATE watchlist SET upper_limit = 180, upper_state = 'triggered'")
+            other.commit()
+            return super().quote(ticker)
+
+    r = check(db_conn, EditingQuotes({"AAPL": 185}), FakeMailer())
+    assert r.rearmed == 0
+    assert db_conn.execute("SELECT upper_limit, upper_state FROM watchlist").fetchone() == (180, "triggered")
+    mailer = FakeMailer()
+    assert check(db_conn, FakeQuotes({"AAPL": 185}), mailer, now=NOW + timedelta(minutes=2)).sent == 0
+    assert mailer.sent == []
+
+
+def test_market_prices_are_committed_before_any_email_is_sent(db_conn, tmp_path):
+    from app.db import connect
+
+    uid = add_user(db_conn, "a@x.com")
+    add_watch(db_conn, uid, upper=190)
+    seen = []
+
+    class CheckingMailer(FakeMailer):
+        def send(self, to, subject, body):
+            other = connect(str(tmp_path / "unit.db"))
+            seen.append(other.execute(
+                "SELECT price FROM prices WHERE ticker = 'AAPL' AND user_id IS NULL AND source = 'market'"
+            ).fetchall())
+            super().send(to, subject, body)
+
+    check(db_conn, FakeQuotes({"AAPL": 191}), CheckingMailer())
+    assert seen == [[(191.0,)]]
+
+
+def test_tickers_over_the_cap_are_counted_not_silently_dropped(db_conn):
+    uid = add_user(db_conn, "a@x.com")
+    prices = {}
+    for i in range(52):
+        t = f"T{i:02d}"
+        add_watch(db_conn, uid, t, upper=1000)
+        prices[t] = 1.0
+    quotes = FakeQuotes(prices)
+    r = check(db_conn, quotes, FakeMailer())
+    assert r.skipped_tickers == 2 and len(quotes.calls) == 50
