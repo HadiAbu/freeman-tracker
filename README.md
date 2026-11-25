@@ -62,6 +62,7 @@ respects hide-balances. Plain `formatCurrency` is right for a ticker's market pr
 ```bash
 npm run typecheck     # tsc --noEmit
 npm run lint          # expo lint
+npm run format:check  # Prettier (npm run format fixes it)
 npm test              # Jest, fast, no coverage
 npm run test:ci       # Jest with coverage and the coverage thresholds (what CI runs)
 npx expo-doctor
@@ -70,6 +71,10 @@ npx expo-doctor
 **Route types gotcha.** `expo lint`, `expo export` and `expo install` rewrite the generated
 `.expo/types/router.d.ts` in a form that makes `tsc` reject `"/"`. Regenerate it by starting the dev
 server once (`npx expo start`), then run `tsc`.
+
+Where things live and the rules for new code: [docs/architecture.md](docs/architecture.md) and
+[docs/conventions.md](docs/conventions.md). To make `git blame` skip the repo-wide formatting
+commit, run once: `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
 
 ## Tests
 

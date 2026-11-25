@@ -17,7 +17,9 @@ export function PriceAutoRefresh() {
 
   useEffect(() => {
     const run = () => {
+      // The server said it has no market data configured: asking again would only repeat the 503.
       if (usePriceStatus.getState().unavailable) return;
+      // The attempt is timed, not the success, so a failing provider is not retried on every focus.
       if (Date.now() - lastAttempt.current < MIN_AUTO_REFRESH_MS) return;
       lastAttempt.current = Date.now();
       mutate();

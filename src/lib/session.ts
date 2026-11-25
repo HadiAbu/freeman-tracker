@@ -18,7 +18,6 @@ export class AuthError extends Error {
   }
 }
 
-// The access token is short-lived and only ever held in memory. The refresh token is in the keychain.
 // Things that hold the signed-in user's data register here to be wiped on sign-out (the query
 // cache does, see query-client.ts). Registering, rather than importing them, keeps this module
 // free of the network and storage listeners they set up, so screens that only need to call the API
@@ -32,6 +31,10 @@ export function onSessionEnd(fn: Cleanup): () => void {
   };
 }
 
+// The access token (15 minutes) lives only in memory, so it is never written anywhere an attacker
+// could read it later. The refresh token (30 days) is in the keychain via token-storage.ts and is
+// the only thing that survives a restart. `inFlight` is the refresh in progress, if any (see
+// refreshSession).
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
 let inFlight: Promise<boolean> | null = null;

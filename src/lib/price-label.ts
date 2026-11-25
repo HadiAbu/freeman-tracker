@@ -6,7 +6,11 @@ export const STALE_AFTER_DAYS = 4;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** Whole days between an ISO date (YYYY-MM-DD) and `now`, using local calendar days. */
+/**
+ * Whole days between an ISO date (YYYY-MM-DD) and `now`, using local calendar days.
+ * Both sides go through `Date.UTC` so a daylight-saving change (a 23 or 25 hour day) cannot make
+ * two adjacent dates look like 0 or 2 days apart; `Math.round` absorbs any leftover drift.
+ */
 export function daysOld(asOf: string, now: Date = new Date()): number {
   const [y, m, d] = asOf.split('-').map(Number);
   const then = Date.UTC(y, m - 1, d);
