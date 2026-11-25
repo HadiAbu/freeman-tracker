@@ -25,7 +25,12 @@ jest.mock('@/lib/api', () => {
   const actual = jest.requireActual('@/lib/api');
   return {
     ...actual,
-    api: { portfolioSummary: jest.fn(), listTrades: jest.fn(), priceHistory: jest.fn(), putHolding: jest.fn() },
+    api: {
+      portfolioSummary: jest.fn(),
+      listTrades: jest.fn(),
+      priceHistory: jest.fn(),
+      putHolding: jest.fn(),
+    },
   };
 });
 
@@ -37,8 +42,12 @@ const putHolding = api.putHolding as jest.Mock;
 beforeEach(() => {
   jest.clearAllMocks();
   portfolioSummary.mockResolvedValue(summary());
-  listTrades.mockResolvedValue([trade({ id: 7, ticker: 'AAPL', traded_at: '2026-10-01', price: 150 })]);
-  priceHistory.mockResolvedValue([{ id: 1, ticker: 'AAPL', price: 180, as_of: '2026-11-01', source: 'manual' }]);
+  listTrades.mockResolvedValue([
+    trade({ id: 7, ticker: 'AAPL', traded_at: '2026-10-01', price: 150 }),
+  ]);
+  priceHistory.mockResolvedValue([
+    { id: 1, ticker: 'AAPL', price: 180, as_of: '2026-11-01', source: 'manual' },
+  ]);
   putHolding.mockResolvedValue({});
 });
 
@@ -56,7 +65,9 @@ test('the price line merges trade prices and price marks in date order', async (
   await renderWithClient(<HoldingScreen />);
   await screen.findByText('$1,800.00');
   await waitFor(() => {
-    const last = mockTrendLine.mock.calls.at(-1)?.[0] as { points: { date: string; value: number }[] };
+    const last = mockTrendLine.mock.calls.at(-1)?.[0] as {
+      points: { date: string; value: number }[];
+    };
     expect(last.points).toEqual([
       { date: '2026-10-01', value: 150 },
       { date: '2026-11-01', value: 180 },
@@ -70,16 +81,25 @@ test('Log price and Research open their screens for this ticker', async () => {
   await fireEvent.press(screen.getByRole('button', { name: 'Log price' }));
   expect(mockPush).toHaveBeenLastCalledWith({ pathname: '/log-price', params: { ticker: 'AAPL' } });
   await fireEvent.press(screen.getByRole('button', { name: 'Research with news' }));
-  expect(mockPush).toHaveBeenLastCalledWith({ pathname: '/analysis/[ticker]', params: { ticker: 'AAPL' } });
+  expect(mockPush).toHaveBeenLastCalledWith({
+    pathname: '/analysis/[ticker]',
+    params: { ticker: 'AAPL' },
+  });
 });
 
 test('saving the classification sends trimmed values and null for blanks', async () => {
-  portfolioSummary.mockResolvedValue(summary({ holdings: [holding({ name: null, sector: null, asset_class: null })] }));
+  portfolioSummary.mockResolvedValue(
+    summary({ holdings: [holding({ name: null, sector: null, asset_class: null })] }),
+  );
   await renderWithClient(<HoldingScreen />);
   await fireEvent.changeText(await screen.findByLabelText('Sector'), '  Technology ');
   await fireEvent.press(screen.getByRole('button', { name: 'Save classification' }));
   await waitFor(() =>
-    expect(putHolding).toHaveBeenCalledWith('AAPL', { name: null, sector: 'Technology', asset_class: null }),
+    expect(putHolding).toHaveBeenCalledWith('AAPL', {
+      name: null,
+      sector: 'Technology',
+      asset_class: null,
+    }),
   );
   expect(await screen.findByText('Saved')).toBeTruthy();
 });

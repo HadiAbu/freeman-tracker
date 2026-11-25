@@ -28,7 +28,10 @@ function Screens({ signedIn }: { signedIn: boolean }) {
       <Stack.Protected guard={signedIn}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="holding/[ticker]" options={{ headerShown: true, title: 'Position' }} />
-        <Stack.Screen name="analysis/[ticker]" options={{ headerShown: true, title: 'News analysis' }} />
+        <Stack.Screen
+          name="analysis/[ticker]"
+          options={{ headerShown: true, title: 'News analysis' }}
+        />
         <Stack.Screen
           name="add-watch"
           options={{ presentation: 'modal', headerShown: true, title: 'Add to watchlist' }}
@@ -58,11 +61,18 @@ export default function RootLayout() {
   return (
     <PersistQueryClientProvider
       client={queryClient}
-      persistOptions={{ persister: queryPersister, maxAge: PERSIST_MAX_AGE, buster: PERSIST_BUSTER }}>
+      persistOptions={{
+        persister: queryPersister,
+        maxAge: PERSIST_MAX_AGE,
+        buster: PERSIST_BUSTER,
+      }}
+    >
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <AnimatedSplashOverlay />
         {authStatus === 'signedIn' ? <PriceAutoRefresh /> : null}
-        {storesReady && authStatus !== 'restoring' ? <Screens signedIn={authStatus === 'signedIn'} /> : null}
+        {storesReady && authStatus !== 'restoring' ? (
+          <Screens signedIn={authStatus === 'signedIn'} />
+        ) : null}
       </ThemeProvider>
     </PersistQueryClientProvider>
   );

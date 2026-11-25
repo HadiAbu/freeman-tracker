@@ -72,7 +72,9 @@ export default function WatchlistScreen() {
               item={item}
               onPress={(w) => router.push({ pathname: '/log-price', params: { ticker: w.ticker } })}
               onLongPress={onRemove}
-              onResearch={(w) => router.push({ pathname: '/analysis/[ticker]', params: { ticker: w.ticker } })}
+              onResearch={(w) =>
+                router.push({ pathname: '/analysis/[ticker]', params: { ticker: w.ticker } })
+              }
             />
           )}
           ItemSeparatorComponent={() => <View style={styles.separator} />}

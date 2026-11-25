@@ -25,7 +25,12 @@ export function ErrorBanner({ message, onDismiss, actionLabel = 'Dismiss' }: Pro
         </ThemedText>
         <ThemedText type="small">{message}</ThemedText>
       </View>
-      <Pressable accessibilityRole="button" accessibilityLabel={actionLabel} onPress={onDismiss} hitSlop={8}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={actionLabel}
+        onPress={onDismiss}
+        hitSlop={8}
+      >
         <ThemedText type="smallBold">{actionLabel}</ThemedText>
       </Pressable>
     </ThemedView>

@@ -49,7 +49,12 @@ jest.mock('@/lib/api', () => {
   const actual = jest.requireActual('@/lib/api');
   return {
     ...actual,
-    api: { portfolioSummary: jest.fn(), listTrades: jest.fn(), history: jest.fn(), allocation: jest.fn() },
+    api: {
+      portfolioSummary: jest.fn(),
+      listTrades: jest.fn(),
+      history: jest.fn(),
+      allocation: jest.fn(),
+    },
   };
 });
 
@@ -88,7 +93,9 @@ describe('dashboard allocation view', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Sector' }));
     expect(usePreferences.getState().allocationBy).toBe('sector');
     await flush();
-    expect(JSON.parse((await AsyncStorage.getItem('freeman-preferences'))!).state.allocationBy).toBe('sector');
+    expect(
+      JSON.parse((await AsyncStorage.getItem('freeman-preferences'))!).state.allocationBy,
+    ).toBe('sector');
     // let the new view finish loading so nothing updates after the test ends
     expect(await screen.findByText('donut:sector')).toBeTruthy();
   });
@@ -130,7 +137,9 @@ describe('trades filter', () => {
     expect(usePreferences.getState().tradesSide).toBe('buy');
     await fireEvent.press(screen.getByRole('button', { name: 'All' }));
     expect(usePreferences.getState().tradesSide).toBeNull();
-    await waitFor(() => expect(listTrades).toHaveBeenLastCalledWith({ side: undefined, limit: 100, offset: 0 }));
+    await waitFor(() =>
+      expect(listTrades).toHaveBeenLastCalledWith({ side: undefined, limit: 100, offset: 0 }),
+    );
   });
 });
 

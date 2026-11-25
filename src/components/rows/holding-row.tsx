@@ -26,7 +26,10 @@ export function HoldingRow({ holding: h }: { holding: Holding }) {
               {money.shares(h.shares)} @ {money.currency(h.avg_cost)}
             </ThemedText>
             {/* where the price came from and how old it is, in words */}
-            <ThemedText type="small" themeColor={isStalePrice(h.price_as_of) ? 'loss' : 'textSecondary'}>
+            <ThemedText
+              type="small"
+              themeColor={isStalePrice(h.price_as_of) ? 'loss' : 'textSecondary'}
+            >
               {priceLabel(h.price_kind, h.price_as_of)}
             </ThemedText>
           </View>

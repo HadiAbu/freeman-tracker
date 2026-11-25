@@ -59,6 +59,10 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # Formatting is Prettier's job (see .prettierrc); run `npm run format` to fix a failure.
+      - name: Check formatting
+        run: npm run format:check
+
       # Fake API settings come from jest.config.js; no secrets are needed. Fails when coverage
       # drops below the thresholds in jest.config.js.
       - name: Test with coverage

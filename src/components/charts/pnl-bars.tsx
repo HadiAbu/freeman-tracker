@@ -31,7 +31,10 @@ export function PnLBars({ holdings }: { holdings: Holding[] }) {
   const plotWidth = width - Y_LABEL_WIDTH - 24;
   // Show only as many bars as fit at full size; scrolling is off, so extra bars would be
   // clipped and unreachable. The holdings list below carries every value.
-  const maxBars = Math.max(3, Math.min(MAX_BARS, Math.floor((plotWidth - 24) / (BAR_WIDTH + MIN_GAP))));
+  const maxBars = Math.max(
+    3,
+    Math.min(MAX_BARS, Math.floor((plotWidth - 24) / (BAR_WIDTH + MIN_GAP))),
+  );
   const shown = [...holdings]
     .sort((a, b) => Math.abs(b.unrealized_pnl) - Math.abs(a.unrealized_pnl))
     .slice(0, maxBars)
@@ -39,7 +42,8 @@ export function PnLBars({ holdings }: { holdings: Holding[] }) {
 
   const maxPos = Math.max(0, ...shown.map((h) => h.unrealized_pnl));
   const maxNeg = Math.max(0, ...shown.map((h) => -h.unrealized_pnl));
-  if (maxPos === 0 && maxNeg === 0) return <ChartNote>No gains or losses yet: every position is at cost.</ChartNote>;
+  if (maxPos === 0 && maxNeg === 0)
+    return <ChartNote>No gains or losses yet: every position is at cost.</ChartNote>;
 
   const step = niceStep(Math.max(maxPos, maxNeg) / 2);
   const posSections = Math.max(1, Math.ceil(maxPos / step));
@@ -64,37 +68,37 @@ export function PnLBars({ holdings }: { holdings: Holding[] }) {
 
   return (
     <View>
-    <BarChart
-      data={data}
-      width={plotWidth}
-      height={HEIGHT}
-      barWidth={BAR_WIDTH}
-      spacing={spacing}
-      initialSpacing={12}
-      endSpacing={12}
-      disableScroll
-      adjustToWidth={false}
-      isAnimated={false}
-      backgroundColor={c.surface}
-      stepValue={step}
-      noOfSections={posSections}
-      maxValue={posSections * step}
-      noOfSectionsBelowXAxis={negSections}
-      mostNegativeValue={-negSections * step}
-      negativeStepValue={step}
-      yAxisLabelWidth={Y_LABEL_WIDTH}
-      formatYLabel={(v: string) => money.compactCurrency(Number(v))}
-      yAxisTextStyle={{ color: c.muted, fontSize: 11 }}
-      yAxisColor="transparent"
-      xAxisColor={c.axis}
-      xAxisThickness={1}
-      rulesType="solid"
-      rulesColor={c.grid}
-      rulesThickness={1}
-      // ticker labels go under the whole plot so negative bars never sit on top of them
-      xAxisLabelsAtBottom
-      xAxisLabelTextStyle={{ color: c.inkSecondary, fontSize: 11, textAlign: 'center' }}
-    />
+      <BarChart
+        data={data}
+        width={plotWidth}
+        height={HEIGHT}
+        barWidth={BAR_WIDTH}
+        spacing={spacing}
+        initialSpacing={12}
+        endSpacing={12}
+        disableScroll
+        adjustToWidth={false}
+        isAnimated={false}
+        backgroundColor={c.surface}
+        stepValue={step}
+        noOfSections={posSections}
+        maxValue={posSections * step}
+        noOfSectionsBelowXAxis={negSections}
+        mostNegativeValue={-negSections * step}
+        negativeStepValue={step}
+        yAxisLabelWidth={Y_LABEL_WIDTH}
+        formatYLabel={(v: string) => money.compactCurrency(Number(v))}
+        yAxisTextStyle={{ color: c.muted, fontSize: 11 }}
+        yAxisColor="transparent"
+        xAxisColor={c.axis}
+        xAxisThickness={1}
+        rulesType="solid"
+        rulesColor={c.grid}
+        rulesThickness={1}
+        // ticker labels go under the whole plot so negative bars never sit on top of them
+        xAxisLabelsAtBottom
+        xAxisLabelTextStyle={{ color: c.inkSecondary, fontSize: 11, textAlign: 'center' }}
+      />
       {truncated ? (
         <ChartNote>{`Showing the ${shown.length} largest moves. Every holding is listed below.`}</ChartNote>
       ) : null}

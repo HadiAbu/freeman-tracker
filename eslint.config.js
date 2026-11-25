@@ -25,7 +25,9 @@ module.exports = defineConfig([
   {
     // Jest setup files run under Jest, which provides these globals.
     files: ['test/**/*.js'],
-    languageOptions: { globals: { jest: 'readonly', beforeEach: 'readonly', afterEach: 'readonly' } },
+    languageOptions: {
+      globals: { jest: 'readonly', beforeEach: 'readonly', afterEach: 'readonly' },
+    },
   },
   {
     // jest.mock factories cannot use imports, and jest.isolateModules needs require().

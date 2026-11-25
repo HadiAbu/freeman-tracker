@@ -36,7 +36,8 @@ export function useLatestAnalysis(ticker: string) {
 export function useRunAnalysis(ticker: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (opts: { refresh?: boolean; personalize?: boolean }) => api.analyze({ ticker, ...opts }),
+    mutationFn: (opts: { refresh?: boolean; personalize?: boolean }) =>
+      api.analyze({ ticker, ...opts }),
     // Not awaited: the mutation must settle as soon as the POST does.
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: analysisKey(ticker) });

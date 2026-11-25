@@ -25,7 +25,6 @@ beforeEach(() => {
   mockSession.refreshSession.mockResolvedValue(true);
 });
 
-
 const json = (status: number, body: unknown) =>
   Promise.resolve({ ok: status < 400, status, json: () => Promise.resolve(body) } as Response);
 
@@ -40,7 +39,9 @@ describe('listTrades', () => {
   test('builds the query string from the options given', async () => {
     const spy = jest.spyOn(global, 'fetch').mockReturnValue(json(200, []));
     await api.listTrades({ side: 'sell', ticker: 'NVDA', limit: 100, offset: 200 });
-    expect(lastCall(spy).url).toBe('http://api.test/trades?side=sell&ticker=NVDA&limit=100&offset=200');
+    expect(lastCall(spy).url).toBe(
+      'http://api.test/trades?side=sell&ticker=NVDA&limit=100&offset=200',
+    );
   });
 
   test('sends no query string when there are no options, and keeps offset 0', async () => {
@@ -54,10 +55,28 @@ describe('listTrades', () => {
 
 describe('requests', () => {
   test.each([
-    ['createTrade', () => api.createTrade({ ticker: 'A', side: 'buy', shares: 1, price: 1, fee: 0, traded_at: '2026-11-01' }), 'POST', '/trades'],
+    [
+      'createTrade',
+      () =>
+        api.createTrade({
+          ticker: 'A',
+          side: 'buy',
+          shares: 1,
+          price: 1,
+          fee: 0,
+          traded_at: '2026-11-01',
+        }),
+      'POST',
+      '/trades',
+    ],
     ['addWatch', () => api.addWatch({ ticker: 'A' }), 'POST', '/watchlist'],
     ['refreshPrices', () => api.refreshPrices(), 'POST', '/prices/refresh'],
-    ['addPrice', () => api.addPrice({ ticker: 'A', price: 1, as_of: '2026-11-01' }), 'POST', '/prices'],
+    [
+      'addPrice',
+      () => api.addPrice({ ticker: 'A', price: 1, as_of: '2026-11-01' }),
+      'POST',
+      '/prices',
+    ],
     ['putHolding', () => api.putHolding('A', { sector: 'Tech' }), 'PUT', '/holdings/A'],
     ['patchHolding', () => api.patchHolding('A', { sector: 'Tech' }), 'PATCH', '/holdings/A'],
   ])('%s uses %s %s with the bearer token', async (_name, call, method, path) => {
@@ -85,7 +104,9 @@ describe('requests', () => {
 
   test('a 204 resolves to undefined without reading a body', async () => {
     const body = jest.fn();
-    jest.spyOn(global, 'fetch').mockResolvedValue({ ok: true, status: 204, json: body } as unknown as Response);
+    jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValue({ ok: true, status: 204, json: body } as unknown as Response);
     await expect(api.deleteTrade(1)).resolves.toBeUndefined();
     expect(body).not.toHaveBeenCalled();
   });
@@ -108,7 +129,9 @@ describe('errors', () => {
   });
 
   test('a plain-string detail is used as the message', async () => {
-    jest.spyOn(global, 'fetch').mockReturnValue(json(409, { detail: 'Cannot delete: a later sell depends on this buy' }));
+    jest
+      .spyOn(global, 'fetch')
+      .mockReturnValue(json(409, { detail: 'Cannot delete: a later sell depends on this buy' }));
     await expect(api.deleteTrade(1)).rejects.toMatchObject({
       status: 409,
       message: 'Cannot delete: a later sell depends on this buy',
@@ -121,14 +144,20 @@ describe('errors', () => {
       status: 502,
       json: () => Promise.reject(new SyntaxError('Unexpected token <')),
     } as unknown as Response);
-    await expect(api.listWatchlist()).rejects.toMatchObject({ status: 502, message: 'Request failed (502)' });
+    await expect(api.listWatchlist()).rejects.toMatchObject({
+      status: 502,
+      message: 'Request failed (502)',
+    });
   });
 
   test('an unreachable server says which server', async () => {
     jest.spyOn(global, 'fetch').mockRejectedValue(new TypeError('Network request failed'));
     const err = await api.listWatchlist().catch((e) => e);
     expect(err).toBeInstanceOf(ApiError);
-    expect(err).toMatchObject({ status: 0, message: 'Could not reach the server at http://api.test.' });
+    expect(err).toMatchObject({
+      status: 0,
+      message: 'Could not reach the server at http://api.test.',
+    });
   });
 
   test('a missing configuration fails clearly and never calls fetch', async () => {
@@ -176,12 +205,15 @@ describe('authentication', () => {
       .mockReturnValueOnce(json(200, [{ id: 1 }]));
     await expect(api.listWatchlist()).resolves.toEqual([{ id: 1 }]);
     expect(mockSession.refreshSession).toHaveBeenCalledTimes(1);
-    const auth = (i: number) => ((spy.mock.calls[i][1] as RequestInit).headers as Record<string, string>).Authorization;
+    const auth = (i: number) =>
+      ((spy.mock.calls[i][1] as RequestInit).headers as Record<string, string>).Authorization;
     expect([auth(0), auth(1)]).toEqual(['Bearer old', 'Bearer new']);
   });
 
   test('it never retries more than once', async () => {
-    const spy = jest.spyOn(global, 'fetch').mockReturnValue(json(401, { detail: 'Session expired' }));
+    const spy = jest
+      .spyOn(global, 'fetch')
+      .mockReturnValue(json(401, { detail: 'Session expired' }));
     await expect(api.listWatchlist()).rejects.toMatchObject({ status: 401 });
     expect(spy).toHaveBeenCalledTimes(2);
     expect(mockSession.refreshSession).toHaveBeenCalledTimes(1);
@@ -206,7 +238,12 @@ describe('authentication', () => {
 
   test('being offline while renewing the token is a network error, not a sign-out', async () => {
     const { AuthError } = jest.requireMock('@/lib/session');
-    mockSession.getAccessToken.mockRejectedValue(new AuthError(0, 'Could not reach the server at http://api.test.'));
-    await expect(api.listWatchlist()).rejects.toMatchObject({ status: 0, message: expect.stringContaining('Could not reach') });
+    mockSession.getAccessToken.mockRejectedValue(
+      new AuthError(0, 'Could not reach the server at http://api.test.'),
+    );
+    await expect(api.listWatchlist()).rejects.toMatchObject({
+      status: 0,
+      message: expect.stringContaining('Could not reach'),
+    });
   });
 });

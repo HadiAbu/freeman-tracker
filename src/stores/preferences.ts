@@ -42,8 +42,10 @@ export function sanitizePreferences(raw: unknown): Partial<PreferencesData> {
   const r = raw as Record<string, unknown>;
   const out: Partial<PreferencesData> = {};
   if (typeof r.hideBalances === 'boolean') out.hideBalances = r.hideBalances;
-  if (ALLOCATION.includes(r.allocationBy as AllocationBy)) out.allocationBy = r.allocationBy as AllocationBy;
-  if (r.tradesSide === null || r.tradesSide === 'buy' || r.tradesSide === 'sell') out.tradesSide = r.tradesSide;
+  if (ALLOCATION.includes(r.allocationBy as AllocationBy))
+    out.allocationBy = r.allocationBy as AllocationBy;
+  if (r.tradesSide === null || r.tradesSide === 'buy' || r.tradesSide === 'sell')
+    out.tradesSide = r.tradesSide;
   if (typeof r.personalizeDefault === 'boolean') out.personalizeDefault = r.personalizeDefault;
   return out;
 }

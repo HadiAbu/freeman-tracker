@@ -17,7 +17,8 @@ test('starts with the defaults', () => {
 });
 
 test('each setter changes only its own setting', () => {
-  const { toggleHideBalances, setAllocationBy, setTradesSide, setPersonalizeDefault } = usePreferences.getState();
+  const { toggleHideBalances, setAllocationBy, setTradesSide, setPersonalizeDefault } =
+    usePreferences.getState();
   toggleHideBalances();
   expect(usePreferences.getState().hideBalances).toBe(true);
   toggleHideBalances();
@@ -39,7 +40,12 @@ test('changes are written to device storage as plain data (no functions)', async
   usePreferences.getState().setAllocationBy('asset_class');
   await flush();
   expect(await stored()).toEqual({
-    state: { hideBalances: true, allocationBy: 'asset_class', tradesSide: null, personalizeDefault: true },
+    state: {
+      hideBalances: true,
+      allocationBy: 'asset_class',
+      tradesSide: null,
+      personalizeDefault: true,
+    },
     version: 1,
   });
 });
@@ -48,7 +54,12 @@ test('saved settings are restored on the next launch', async () => {
   await AsyncStorage.setItem(
     KEY,
     JSON.stringify({
-      state: { hideBalances: true, allocationBy: 'sector', tradesSide: 'buy', personalizeDefault: false },
+      state: {
+        hideBalances: true,
+        allocationBy: 'sector',
+        tradesSide: 'buy',
+        personalizeDefault: false,
+      },
       version: 1,
     }),
   );
@@ -93,7 +104,9 @@ describe('sanitizePreferences', () => {
   });
 
   test('accepts every valid value', () => {
-    expect(sanitizePreferences({ allocationBy: 'asset_class', tradesSide: null, hideBalances: false })).toEqual({
+    expect(
+      sanitizePreferences({ allocationBy: 'asset_class', tradesSide: null, hideBalances: false }),
+    ).toEqual({
       allocationBy: 'asset_class',
       tradesSide: null,
       hideBalances: false,

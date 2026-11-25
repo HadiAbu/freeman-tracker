@@ -19,7 +19,7 @@ module.exports = {
   // coverage really drops, not on every refactor. Raise it as coverage grows.
   coverageThreshold: { global: { statements: 78, branches: 70, functions: 78, lines: 80 } },
   moduleNameMapper: {
-    '\\.css$':'<rootDir>/test/empty-module.js',
+    '\\.css$': '<rootDir>/test/empty-module.js',
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   transformIgnorePatterns: [

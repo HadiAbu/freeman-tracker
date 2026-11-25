@@ -56,7 +56,12 @@ async function post<T>(path: string, body: unknown): Promise<T> {
     // keep the generic message below
   }
   if (!res.ok) {
-    const detail = typeof data.detail === 'string' ? data.detail : Array.isArray(data.detail) ? 'Check the email and password and try again.' : null;
+    const detail =
+      typeof data.detail === 'string'
+        ? data.detail
+        : Array.isArray(data.detail)
+          ? 'Check the email and password and try again.'
+          : null;
     throw new AuthError(res.status, detail ?? `Request failed (${res.status})`);
   }
   return data as T;
@@ -134,7 +139,9 @@ export function refreshSession(): Promise<boolean> {
  * Cached server data and the saved trade draft belong to the account, so they go too: the next
  * person to sign in on this device must not see them. (Display preferences stay.)
  */
-export async function endSession({ remote }: { remote: boolean } = { remote: true }): Promise<void> {
+export async function endSession(
+  { remote }: { remote: boolean } = { remote: true },
+): Promise<void> {
   const token = refreshToken;
   accessToken = null;
   refreshToken = null;

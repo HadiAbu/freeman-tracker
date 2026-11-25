@@ -22,7 +22,8 @@ export function SourceList({ sources, now }: { sources: AnalysisSource[]; now?: 
               <Pressable
                 accessibilityRole="link"
                 accessibilityLabel={`${s.title}, opens in browser`}
-                onPress={() => openSafeLink(s.url)}>
+                onPress={() => openSafeLink(s.url)}
+              >
                 <ThemedText type="link">{label}</ThemedText>
               </Pressable>
             ) : (

@@ -19,7 +19,8 @@ export const TradeRow = React.memo(function TradeRow({ trade, onLongPress }: Pro
   return (
     <Pressable
       accessibilityHint={onLongPress ? 'Long press to delete' : undefined}
-      onLongPress={onLongPress ? () => onLongPress(trade) : undefined}>
+      onLongPress={onLongPress ? () => onLongPress(trade) : undefined}
+    >
       <ThemedView type="backgroundElement" style={styles.row}>
         <View style={styles.left}>
           <View style={styles.titleLine}>

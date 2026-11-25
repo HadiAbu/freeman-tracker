@@ -6,7 +6,9 @@ import { MIN_AUTO_REFRESH_MS, PriceAutoRefresh } from '@/components/prices/price
 import { usePriceStatus } from '@/stores/price-status';
 
 const mockMutate = jest.fn();
-jest.mock('@/hooks/use-market-prices', () => ({ useRefreshPrices: () => ({ mutate: mockMutate }) }));
+jest.mock('@/hooks/use-market-prices', () => ({
+  useRefreshPrices: () => ({ mutate: mockMutate }),
+}));
 
 let onChange: (state: string) => void;
 const remove = jest.fn();

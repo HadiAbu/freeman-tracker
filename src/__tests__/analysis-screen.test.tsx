@@ -5,7 +5,13 @@ import AnalysisScreen, { DISCLAIMER } from '@/app/analysis/[ticker]';
 import type { Analysis } from '@/types';
 
 const mockMutate = jest.fn();
-let mockLatest: { data?: Analysis | null; isPending: boolean; isError: boolean; error?: Error; refetch: jest.Mock };
+let mockLatest: {
+  data?: Analysis | null;
+  isPending: boolean;
+  isError: boolean;
+  error?: Error;
+  refetch: jest.Mock;
+};
 let mockRun: { mutate: jest.Mock; isPending: boolean; isError: boolean; error: Error | null };
 let mockSummary: { data?: { holdings: { ticker: string }[] } };
 
@@ -20,16 +26,36 @@ jest.mock('@/hooks/use-analysis', () => ({
 jest.mock('@/hooks/use-trades', () => ({ usePortfolioSummary: () => mockSummary }));
 
 const ANALYSIS: Analysis = {
-  ticker: 'AAPL', generated_at: '2026-11-17T10:00:00Z', cached: false, personalized: true,
-  stance: 'hold', confidence: 'medium', summary: 'A balanced picture.',
+  ticker: 'AAPL',
+  generated_at: '2026-11-17T10:00:00Z',
+  cached: false,
+  personalized: true,
+  stance: 'hold',
+  confidence: 'medium',
+  summary: 'A balanced picture.',
   case_for: [{ point: 'Demand is strong', source_ids: ['a1'] }],
   case_against: [{ point: 'Valuation is rich', source_ids: ['b2'] }],
   watch_for: ['Next earnings'],
   sources: [
-    { id: 'a1', title: 'Apple beats estimates', source: 'Reuters', published_at: '2026-11-17T09:00:00Z', url: 'https://example.com/a', origin: 'finnhub_company' },
-    { id: 'b2', title: 'Analysts warn on valuation', source: 'Wire', published_at: null, url: 'https://example.com/b', origin: 'gdelt' },
+    {
+      id: 'a1',
+      title: 'Apple beats estimates',
+      source: 'Reuters',
+      published_at: '2026-11-17T09:00:00Z',
+      url: 'https://example.com/a',
+      origin: 'finnhub_company',
+    },
+    {
+      id: 'b2',
+      title: 'Analysts warn on valuation',
+      source: 'Wire',
+      published_at: null,
+      url: 'https://example.com/b',
+      origin: 'gdelt',
+    },
   ],
-  notes: ['GDELT world news unavailable (rate limited).'], model: 'm',
+  notes: ['GDELT world news unavailable (rate limited).'],
+  model: 'm',
 };
 
 beforeEach(() => {
@@ -88,7 +114,16 @@ test('the position switch appears only for a held ticker and re-runs without the
 });
 
 test('an unclear result explains itself instead of showing empty sections', async () => {
-  mockLatest.data = { ...ANALYSIS, stance: 'unclear', confidence: 'low', case_for: [], case_against: [], watch_for: [], sources: [], summary: 'Not enough recent news to form a view.' };
+  mockLatest.data = {
+    ...ANALYSIS,
+    stance: 'unclear',
+    confidence: 'low',
+    case_for: [],
+    case_against: [],
+    watch_for: [],
+    sources: [],
+    summary: 'Not enough recent news to form a view.',
+  };
   await render(<AnalysisScreen />);
   expect(screen.getByText('No clear lean')).toBeTruthy();
   expect(screen.getByText('Not enough recent news to form a view.')).toBeTruthy();
@@ -103,7 +138,13 @@ test('a failed run shows the server message in an error banner with Dismiss', as
 });
 
 test('a failure to load the stored analysis shows an error with retry', async () => {
-  mockLatest = { data: undefined, isPending: false, isError: true, error: new Error('Could not reach the server'), refetch: jest.fn() };
+  mockLatest = {
+    data: undefined,
+    isPending: false,
+    isError: true,
+    error: new Error('Could not reach the server'),
+    refetch: jest.fn(),
+  };
   await render(<AnalysisScreen />);
   expect(screen.getByText('Could not reach the server')).toBeTruthy();
   await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));

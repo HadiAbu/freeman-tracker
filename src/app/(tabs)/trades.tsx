@@ -84,8 +84,12 @@ export default function TradesScreen() {
               key={f.label}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
-              onPress={() => setSavedSide(f.value ?? null)}>
-              <ThemedView type={active ? 'backgroundSelected' : 'backgroundElement'} style={styles.pill}>
+              onPress={() => setSavedSide(f.value ?? null)}
+            >
+              <ThemedView
+                type={active ? 'backgroundSelected' : 'backgroundElement'}
+                style={styles.pill}
+              >
                 <ThemedText type="small" themeColor={active ? 'text' : 'textSecondary'}>
                   {f.label}
                 </ThemedText>
@@ -112,7 +116,10 @@ export default function TradesScreen() {
           renderItem={renderItem}
           ItemSeparatorComponent={Separator}
           ListEmptyComponent={
-            <EmptyState title="No trades yet" hint="Tap “Add trade” to log your first buy or sell." />
+            <EmptyState
+              title="No trades yet"
+              hint="Tap “Add trade” to log your first buy or sell."
+            />
           }
           ListFooterComponent={
             trades.hasNextPage ? (
@@ -144,7 +151,11 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.three,
   },
   filters: { flexDirection: 'row', gap: Spacing.two, paddingBottom: Spacing.three },
-  pill: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, borderRadius: Spacing.five },
+  pill: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    borderRadius: Spacing.five,
+  },
   banner: { paddingBottom: Spacing.three },
   list: { flexGrow: 1, paddingBottom: BottomTabInset + Spacing.four },
   separator: { height: Spacing.two },

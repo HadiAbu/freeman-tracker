@@ -61,9 +61,19 @@ export type AllocationSlice = { label: string; value: number; percent: number; s
 
 export type HistoryPoint = { date: string; value: number; cost: number };
 
-export type PricePoint = { id: number; ticker: string; price: number; as_of: string; source: string };
+export type PricePoint = {
+  id: number;
+  ticker: string;
+  price: number;
+  as_of: string;
+  source: string;
+};
 
-export type HoldingMeta = { name?: string | null; sector?: string | null; asset_class?: string | null };
+export type HoldingMeta = {
+  name?: string | null;
+  sector?: string | null;
+  asset_class?: string | null;
+};
 
 export type WatchItem = {
   id: number;

@@ -29,7 +29,8 @@ export function Button({ title, onPress, variant = 'primary', loading, disabled 
         styles.base,
         { backgroundColor: primary ? theme.text : theme.backgroundElement },
         (pressed || inactive) && styles.dim,
-      ]}>
+      ]}
+    >
       {loading ? (
         <ActivityIndicator color={primary ? theme.background : theme.text} />
       ) : (

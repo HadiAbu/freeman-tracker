@@ -18,7 +18,10 @@ export function PriceUpdated() {
   }
   if (!lastFetchedAt) return null;
 
-  const time = new Date(lastFetchedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  const time = new Date(lastFetchedAt).toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
   const note = failedCount > 0 ? ` · ${failedCount} could not be updated` : '';
   return (
     <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">

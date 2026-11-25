@@ -23,7 +23,8 @@ const patchHolding = api.patchHolding as jest.Mock;
 const draft = () => useTradeDraft.getState().draft;
 const flush = () => new Promise((r) => setImmediate(r));
 
-const type = (label: string, value: string) => fireEvent.changeText(screen.getByLabelText(label), value);
+const type = (label: string, value: string) =>
+  fireEvent.changeText(screen.getByLabelText(label), value);
 const save = () => screen.getByRole('button', { name: 'Save trade' });
 
 beforeEach(() => {
@@ -70,7 +71,9 @@ test('the draft reaches device storage, so it survives the app being killed', as
 });
 
 test('reopening the form restores the draft and says so', async () => {
-  useTradeDraft.setState({ draft: { ...EMPTY_DRAFT, side: 'sell', ticker: 'NVDA', shares: '4', price: '90' } });
+  useTradeDraft.setState({
+    draft: { ...EMPTY_DRAFT, side: 'sell', ticker: 'NVDA', shares: '4', price: '90' },
+  });
   await renderWithClient(<AddTradeScreen />);
   expect(screen.getByLabelText('Ticker').props.value).toBe('NVDA');
   expect(screen.getByLabelText('Shares').props.value).toBe('4');
@@ -95,7 +98,9 @@ test('Cancel discards the draft and closes', async () => {
   expect(draft()).toEqual(EMPTY_DRAFT);
   expect(mockBack).toHaveBeenCalled();
   await flush();
-  expect(JSON.parse((await AsyncStorage.getItem('freeman-trade-draft'))!).state.draft).toEqual(EMPTY_DRAFT);
+  expect(JSON.parse((await AsyncStorage.getItem('freeman-trade-draft'))!).state.draft).toEqual(
+    EMPTY_DRAFT,
+  );
 });
 
 test('a saved trade clears the draft', async () => {

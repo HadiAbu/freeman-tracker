@@ -8,9 +8,30 @@ import { StanceChip } from '@/components/analysis/stance-chip';
 import type { AnalysisSource } from '@/types';
 
 const SOURCES: AnalysisSource[] = [
-  { id: 'a1', title: 'Apple beats estimates', source: 'Reuters', published_at: '2026-11-17T09:00:00Z', url: 'https://example.com/a', origin: 'finnhub_company' },
-  { id: 'b2', title: 'Plain http story', source: 'Wire', published_at: null, url: 'http://example.com/b', origin: 'gdelt' },
-  { id: 'c3', title: '<b>Markup</b> headline', source: 'Wire', published_at: null, url: 'javascript:alert(1)', origin: 'gdelt' },
+  {
+    id: 'a1',
+    title: 'Apple beats estimates',
+    source: 'Reuters',
+    published_at: '2026-11-17T09:00:00Z',
+    url: 'https://example.com/a',
+    origin: 'finnhub_company',
+  },
+  {
+    id: 'b2',
+    title: 'Plain http story',
+    source: 'Wire',
+    published_at: null,
+    url: 'http://example.com/b',
+    origin: 'gdelt',
+  },
+  {
+    id: 'c3',
+    title: '<b>Markup</b> headline',
+    source: 'Wire',
+    published_at: null,
+    url: 'javascript:alert(1)',
+    origin: 'gdelt',
+  },
 ];
 
 beforeEach(() => jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined));

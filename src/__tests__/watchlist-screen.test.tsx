@@ -10,7 +10,9 @@ const mockPush = jest.fn();
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }));
 jest.mock('@/lib/haptics', () => ({ haptic: jest.fn() }));
 // Run the confirmed action straight away; the real helper shows a native alert.
-const mockConfirm = jest.fn((_t: string, _m: string, _l: string, onConfirm: () => void) => onConfirm());
+const mockConfirm = jest.fn((_t: string, _m: string, _l: string, onConfirm: () => void) =>
+  onConfirm(),
+);
 jest.mock('@/lib/confirm', () => ({
   confirmDestructive: (...args: [string, string, string, () => void]) => mockConfirm(...args),
 }));
@@ -31,8 +33,24 @@ beforeEach(() => {
 test('lists watched tickers with their target status and last price', async () => {
   listWatchlist.mockResolvedValue([
     watchItem({ id: 1, ticker: 'AAPL', price: 180, target_price: 200, pct_to_target: 11.11 }),
-    watchItem({ id: 2, ticker: 'MSFT', name: 'Microsoft', price: 410, target_price: 400, pct_to_target: -2.4 }),
-    watchItem({ id: 3, ticker: 'TSLA', name: null, price: null, price_kind: null, price_as_of: null, target_price: null, pct_to_target: null }),
+    watchItem({
+      id: 2,
+      ticker: 'MSFT',
+      name: 'Microsoft',
+      price: 410,
+      target_price: 400,
+      pct_to_target: -2.4,
+    }),
+    watchItem({
+      id: 3,
+      ticker: 'TSLA',
+      name: null,
+      price: null,
+      price_kind: null,
+      price_as_of: null,
+      target_price: null,
+      pct_to_target: null,
+    }),
   ]);
   await renderWithClient(<WatchlistScreen />);
   expect(await screen.findByText('Target $200.00 · +11.11% to go')).toBeTruthy();
@@ -64,11 +82,16 @@ test('navigates to add, log-price and research', async () => {
   await fireEvent.press(screen.getByRole('button', { name: 'Add ticker' }));
   expect(mockPush).toHaveBeenLastCalledWith('/add-watch');
 
-  await fireEvent.press(screen.getByRole('button', { name: 'AAPL, tap to log a price, long press to remove' }));
+  await fireEvent.press(
+    screen.getByRole('button', { name: 'AAPL, tap to log a price, long press to remove' }),
+  );
   expect(mockPush).toHaveBeenLastCalledWith({ pathname: '/log-price', params: { ticker: 'AAPL' } });
 
   await fireEvent.press(screen.getByRole('button', { name: 'Research AAPL with news' }));
-  expect(mockPush).toHaveBeenLastCalledWith({ pathname: '/analysis/[ticker]', params: { ticker: 'AAPL' } });
+  expect(mockPush).toHaveBeenLastCalledWith({
+    pathname: '/analysis/[ticker]',
+    params: { ticker: 'AAPL' },
+  });
 });
 
 test('the ticker box opens the analysis screen for an upper-cased ticker', async () => {
@@ -76,21 +99,33 @@ test('the ticker box opens the analysis screen for an upper-cased ticker', async
   await screen.findByText('AAPL');
   await fireEvent.changeText(screen.getByLabelText('Research a ticker'), 'nvda');
   await fireEvent.press(screen.getByRole('button', { name: 'Research' }));
-  expect(mockPush).toHaveBeenLastCalledWith({ pathname: '/analysis/[ticker]', params: { ticker: 'NVDA' } });
+  expect(mockPush).toHaveBeenLastCalledWith({
+    pathname: '/analysis/[ticker]',
+    params: { ticker: 'NVDA' },
+  });
 });
 
 test('long press confirms, then removes the item', async () => {
   await renderWithClient(<WatchlistScreen />);
-  const row = await screen.findByRole('button', { name: 'AAPL, tap to log a price, long press to remove' });
+  const row = await screen.findByRole('button', {
+    name: 'AAPL, tap to log a price, long press to remove',
+  });
   await fireEvent(row, 'longPress');
-  expect(mockConfirm).toHaveBeenCalledWith('Remove from watchlist?', 'AAPL', 'Remove', expect.any(Function));
+  expect(mockConfirm).toHaveBeenCalledWith(
+    'Remove from watchlist?',
+    'AAPL',
+    'Remove',
+    expect.any(Function),
+  );
   await waitFor(() => expect(deleteWatch).toHaveBeenCalledWith(1));
 });
 
 test('a failed removal shows the error and it can be dismissed', async () => {
   deleteWatch.mockRejectedValue(new Error('Item not found'));
   await renderWithClient(<WatchlistScreen />);
-  const row = await screen.findByRole('button', { name: 'AAPL, tap to log a price, long press to remove' });
+  const row = await screen.findByRole('button', {
+    name: 'AAPL, tap to log a price, long press to remove',
+  });
   await fireEvent(row, 'longPress');
   expect(await screen.findByText('Item not found')).toBeTruthy();
   await fireEvent.press(screen.getByRole('button', { name: 'Dismiss' }));

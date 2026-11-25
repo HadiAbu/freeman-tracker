@@ -3,7 +3,12 @@ import { buildSlices, OTHER_LABEL } from '@/lib/entity-colors';
 
 const palette = Array.from({ length: MAX_CATEGORICAL }, (_, i) => `#c${i}`);
 const OTHER = '#999999';
-const slice = (label: string, value: number, slot: number) => ({ label, value, percent: value, slot });
+const slice = (label: string, value: number, slot: number) => ({
+  label,
+  value,
+  percent: value,
+  slot,
+});
 
 test('color follows the slot, not the rank', () => {
   // B is the larger slice but has the later slot; it keeps slot 1's color

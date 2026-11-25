@@ -23,7 +23,8 @@ export function ErrorFallback({ error, retry }: Props) {
     <ThemedView style={styles.container} accessibilityRole="alert">
       <ThemedText type="subtitle">Something went wrong</ThemedText>
       <ThemedText themeColor="textSecondary" style={styles.body}>
-        The app hit an unexpected problem. Your data is safe. Try again, and if it keeps happening, restart the app.
+        The app hit an unexpected problem. Your data is safe. Try again, and if it keeps happening,
+        restart the app.
       </ThemedText>
       <Button title="Try again" onPress={() => void retry()} />
     </ThemedView>

@@ -19,7 +19,9 @@ export default function SignInScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const creating = mode === 'register';
-  const valid = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim()) && password.length >= (creating ? MIN_PASSWORD : 1);
+  const valid =
+    /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim()) &&
+    password.length >= (creating ? MIN_PASSWORD : 1);
 
   const submit = async () => {
     if (!valid || busy) return;
@@ -36,7 +38,10 @@ export default function SignInScreen() {
 
   return (
     <Screen>
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <ThemedText type="subtitle">{creating ? 'Create account' : 'Sign in'}</ThemedText>
           <ThemedText themeColor="textSecondary">

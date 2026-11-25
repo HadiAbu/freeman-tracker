@@ -24,7 +24,8 @@ export function StanceChip({ stance, confidence }: { stance: Stance; confidence:
       type="backgroundElement"
       style={styles.chip}
       accessible
-      accessibilityLabel={stanceSpoken(stance, confidence)}>
+      accessibilityLabel={stanceSpoken(stance, confidence)}
+    >
       <MaterialCommunityIcons name={ICONS[stance]} size={28} color={theme.text} />
       <View>
         <ThemedText type="smallBold">{stanceTitle(stance)}</ThemedText>

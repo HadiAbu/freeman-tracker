@@ -14,7 +14,12 @@ test('setDraft merges into the draft without losing other fields', () => {
   const { setDraft } = useTradeDraft.getState();
   setDraft({ ticker: 'NVDA' });
   setDraft({ shares: '3', side: 'sell' });
-  expect(useTradeDraft.getState().draft).toEqual({ ...EMPTY_DRAFT, ticker: 'NVDA', shares: '3', side: 'sell' });
+  expect(useTradeDraft.getState().draft).toEqual({
+    ...EMPTY_DRAFT,
+    ticker: 'NVDA',
+    shares: '3',
+    side: 'sell',
+  });
   expect(isEmptyDraft(useTradeDraft.getState().draft)).toBe(false);
 });
 
@@ -42,14 +47,22 @@ test('the draft is written to device storage and restored on the next launch', a
   useTradeDraft.getState().setDraft({ ticker: 'NVDA', shares: '2', date: '2026-10-01' });
   await flush();
   const raw = (await AsyncStorage.getItem(KEY))!;
-  expect(JSON.parse(raw).state.draft).toMatchObject({ ticker: 'NVDA', shares: '2', date: '2026-10-01' });
+  expect(JSON.parse(raw).state.draft).toMatchObject({
+    ticker: 'NVDA',
+    shares: '2',
+    date: '2026-10-01',
+  });
 
   // A restart: memory starts empty but the device storage still holds what was saved. (setState
   // on a persisted store writes through, so put the saved copy back before loading it.)
   useTradeDraft.setState({ draft: EMPTY_DRAFT });
   await AsyncStorage.setItem(KEY, raw);
   await useTradeDraft.persist.rehydrate();
-  expect(useTradeDraft.getState().draft).toMatchObject({ ticker: 'NVDA', shares: '2', date: '2026-10-01' });
+  expect(useTradeDraft.getState().draft).toMatchObject({
+    ticker: 'NVDA',
+    shares: '2',
+    date: '2026-10-01',
+  });
   expect(typeof useTradeDraft.getState().setDraft).toBe('function');
 });
 
@@ -65,7 +78,9 @@ describe('sanitizeDraft', () => {
   });
 
   test('keeps well-typed fields and drops the rest', () => {
-    expect(sanitizeDraft({ ticker: 'NVDA', shares: 5, side: 'hold', date: 20260101, note: 'ok' })).toEqual({
+    expect(
+      sanitizeDraft({ ticker: 'NVDA', shares: 5, side: 'hold', date: 20260101, note: 'ok' }),
+    ).toEqual({
       ...EMPTY_DRAFT,
       ticker: 'NVDA',
       note: 'ok',

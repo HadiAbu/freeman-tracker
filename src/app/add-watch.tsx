@@ -53,7 +53,10 @@ export default function AddWatchScreen() {
 
   return (
     <ThemedView style={styles.root}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.root}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.root}
+      >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <TextField
             label="Ticker"
@@ -64,7 +67,12 @@ export default function AddWatchScreen() {
             autoCapitalize="characters"
             autoCorrect={false}
           />
-          <TextField label="Name (optional)" value={name} onChangeText={setName} placeholder="NVIDIA" />
+          <TextField
+            label="Name (optional)"
+            value={name}
+            onChangeText={setName}
+            placeholder="NVIDIA"
+          />
           <TextField
             label="Target price (optional)"
             error={errors.target}
@@ -73,7 +81,12 @@ export default function AddWatchScreen() {
             placeholder="500"
             keyboardType="decimal-pad"
           />
-          <TextField label="Note (optional)" value={note} onChangeText={setNote} placeholder="Why are you watching it?" />
+          <TextField
+            label="Note (optional)"
+            value={note}
+            onChangeText={setNote}
+            placeholder="Why are you watching it?"
+          />
           <ThemedText type="small" themeColor="textSecondary">
             Adding a ticker that is already on the list updates its target and note.
           </ThemedText>
@@ -94,5 +107,11 @@ export default function AddWatchScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  content: { padding: Spacing.three, gap: Spacing.three, width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center' },
+  content: {
+    padding: Spacing.three,
+    gap: Spacing.three,
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+  },
 });

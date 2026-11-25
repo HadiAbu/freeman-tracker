@@ -1,4 +1,11 @@
-import { formatCompactCurrency, formatCurrency, formatShares, formatSignedCurrency, MASK, moneyFormatters } from '@/lib/format';
+import {
+  formatCompactCurrency,
+  formatCurrency,
+  formatShares,
+  formatSignedCurrency,
+  MASK,
+  moneyFormatters,
+} from '@/lib/format';
 
 test('visible: the formatters are the plain ones', () => {
   const m = moneyFormatters(false);

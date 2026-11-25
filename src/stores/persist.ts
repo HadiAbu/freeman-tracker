@@ -41,9 +41,5 @@ const subscribe = (l: () => void) => {
  * on screen at every cold start.
  */
 export function useStoresSettled(): boolean {
-  return useSyncExternalStore(
-    subscribe,
-    areStoresSettled,
-    () => false,
-  );
+  return useSyncExternalStore(subscribe, areStoresSettled, () => false);
 }

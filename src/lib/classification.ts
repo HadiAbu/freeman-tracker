@@ -5,7 +5,10 @@ import type { HoldingMeta } from '@/types';
  * changes the fields it is sent). Never includes name or nulls, so blank fields keep their
  * stored value. Returns null when nothing was entered (no request needed).
  */
-export function enteredClassification(input: { sector: string; assetClass: string }): HoldingMeta | null {
+export function enteredClassification(input: {
+  sector: string;
+  assetClass: string;
+}): HoldingMeta | null {
   const sector = input.sector.trim();
   const assetClass = input.assetClass.trim();
   const meta: HoldingMeta = {};

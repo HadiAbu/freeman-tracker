@@ -61,12 +61,18 @@ export function AllocationDonut({ slices, total }: Props) {
             accessibilityLabel={`${s.label}, ${money.currency(s.value)}, ${s.percent.toFixed(1)} percent`}
             accessibilityState={{ selected: focused === i }}
             onPress={() => toggle(i)}
-            style={styles.row}>
+            style={styles.row}
+          >
             <View style={[styles.swatch, { backgroundColor: s.color }]} />
-            <Text style={[styles.name, { color: c.ink }, focused === i && styles.bold]} numberOfLines={1}>
+            <Text
+              style={[styles.name, { color: c.ink }, focused === i && styles.bold]}
+              numberOfLines={1}
+            >
               {s.label}
             </Text>
-            <Text style={[styles.amount, { color: c.inkSecondary }]}>{money.currency(s.value)}</Text>
+            <Text style={[styles.amount, { color: c.inkSecondary }]}>
+              {money.currency(s.value)}
+            </Text>
             <Text style={[styles.percent, { color: c.inkSecondary }]}>{s.percent.toFixed(1)}%</Text>
           </Pressable>
         ))}

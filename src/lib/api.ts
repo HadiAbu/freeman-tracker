@@ -143,16 +143,14 @@ export const api = {
   portfolioSummary: () => request<PortfolioSummary>('/portfolio/summary'),
   allocation: (by: AllocationBy) => request<AllocationSlice[]>(`/portfolio/allocation?by=${by}`),
   history: () => request<HistoryPoint[]>('/portfolio/history'),
-  priceHistory: (ticker: string) =>
-    request<PricePoint[]>(`/prices/${encodeURIComponent(ticker)}`),
+  priceHistory: (ticker: string) => request<PricePoint[]>(`/prices/${encodeURIComponent(ticker)}`),
   listWatchlist: () => request<WatchItem[]>('/watchlist'),
   // POST upserts by ticker, so adding an existing ticker updates its target and note.
   addWatch: (item: NewWatch) =>
     request<WatchItem>('/watchlist', { method: 'POST', body: JSON.stringify(item) }),
   deleteWatch: (id: number) => request<void>(`/watchlist/${id}`, { method: 'DELETE' }),
   // The server stops asking the provider after 20 s, so allow a little longer than that.
-  refreshPrices: () =>
-    request<PriceRefreshResult>('/prices/refresh', { method: 'POST' }, 30_000),
+  refreshPrices: () => request<PriceRefreshResult>('/prices/refresh', { method: 'POST' }, 30_000),
   addPrice: (p: NewPrice) =>
     request<PricePoint>('/prices', { method: 'POST', body: JSON.stringify(p) }),
   // A news analysis can take a while (news fetch + model call), so allow 90 seconds.

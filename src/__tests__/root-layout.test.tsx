@@ -22,7 +22,13 @@ jest.mock('expo-router', () => {
     return null;
   };
   // Records the guard so a test can check which side of the route guard is open.
-  Stack.Protected = function Protected({ guard, children }: { guard: boolean; children?: React.ReactNode }) {
+  Stack.Protected = function Protected({
+    guard,
+    children,
+  }: {
+    guard: boolean;
+    children?: React.ReactNode;
+  }) {
     return <Text>{`guard:${guard}`}</Text>;
   };
   return { Stack };
@@ -79,7 +85,10 @@ test('signed out, only the sign-in screen is reachable', async () => {
 
 test('with a saved session, only the app is reachable', async () => {
   mockReady = true;
-  await SecureStore.setItemAsync('freeman.session', JSON.stringify({ refreshToken: 'r', email: 'a@b.co' }));
+  await SecureStore.setItemAsync(
+    'freeman.session',
+    JSON.stringify({ refreshToken: 'r', email: 'a@b.co' }),
+  );
   await render(<RootLayout />);
   expect(await screen.findByText('router-stack')).toBeTruthy();
   expect(guards()).toEqual(['guard:false', 'guard:true']);

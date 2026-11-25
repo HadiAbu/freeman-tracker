@@ -69,7 +69,9 @@ beforeEach(() => {
     { date: '2026-10-01', value: 100, cost: 90 },
     { date: '2026-11-01', value: 120, cost: 90 },
   ]);
-  (api.allocation as jest.Mock).mockResolvedValue([{ label: 'AAPL', value: 100, percent: 100, slot: 0 }]);
+  (api.allocation as jest.Mock).mockResolvedValue([
+    { label: 'AAPL', value: 100, percent: 100, slot: 0 },
+  ]);
   (api.priceHistory as jest.Mock).mockResolvedValue([]);
 });
 
@@ -109,7 +111,9 @@ describe('dashboard', () => {
 describe('portfolio', () => {
   test('hidden: total, holding value, cost and gain are masked; the percentage is not', async () => {
     (api.portfolioSummary as jest.Mock).mockResolvedValue(
-      summary({ holdings: [holding({ ticker: 'AAPL', name: 'Apple Inc.', shares: 10, avg_cost: 150 })] }),
+      summary({
+        holdings: [holding({ ticker: 'AAPL', name: 'Apple Inc.', shares: 10, avg_cost: 150 })],
+      }),
     );
     hide();
     await renderWithClient(<PortfolioScreen />);
@@ -154,7 +158,9 @@ describe('position screen', () => {
 
 describe('trades tab', () => {
   test('hidden: share counts and totals are masked; the price per share is not', async () => {
-    (api.listTrades as jest.Mock).mockResolvedValue([trade({ id: 1, ticker: 'NVDA', shares: 2, price: 100, fee: 1 })]);
+    (api.listTrades as jest.Mock).mockResolvedValue([
+      trade({ id: 1, ticker: 'NVDA', shares: 2, price: 100, fee: 1 }),
+    ]);
     hide();
     await renderWithClient(<TradesScreen />);
     expect(await screen.findByText(/^•••• × \$100\.00 · 2026-11-01$/)).toBeTruthy();

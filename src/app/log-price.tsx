@@ -51,7 +51,10 @@ export default function LogPriceScreen() {
 
   return (
     <ThemedView style={styles.root}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.root}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.root}
+      >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <TextField
             label="Ticker"
@@ -101,5 +104,11 @@ export default function LogPriceScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  content: { padding: Spacing.three, gap: Spacing.three, width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center' },
+  content: {
+    padding: Spacing.three,
+    gap: Spacing.three,
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+  },
 });

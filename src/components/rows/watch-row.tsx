@@ -32,7 +32,8 @@ export function WatchRow({ item, onPress, onLongPress, onResearch }: Props) {
         accessibilityRole="button"
         accessibilityLabel={`${item.ticker}, tap to log a price, long press to remove`}
         onPress={() => onPress(item)}
-        onLongPress={() => onLongPress(item)}>
+        onLongPress={() => onLongPress(item)}
+      >
         <View style={styles.row}>
           <View style={styles.left}>
             <ThemedText type="smallBold">{item.ticker}</ThemedText>
@@ -52,8 +53,13 @@ export function WatchRow({ item, onPress, onLongPress, onResearch }: Props) {
             ) : null}
           </View>
           <View style={styles.right}>
-            <ThemedText type="smallBold">{item.price === null ? '—' : formatCurrency(item.price)}</ThemedText>
-            <ThemedText type="small" themeColor={isStalePrice(item.price_as_of) ? 'loss' : 'textSecondary'}>
+            <ThemedText type="smallBold">
+              {item.price === null ? '—' : formatCurrency(item.price)}
+            </ThemedText>
+            <ThemedText
+              type="small"
+              themeColor={isStalePrice(item.price_as_of) ? 'loss' : 'textSecondary'}
+            >
               {priceLabel(item.price_kind, item.price_as_of)}
             </ThemedText>
           </View>
@@ -66,7 +72,8 @@ export function WatchRow({ item, onPress, onLongPress, onResearch }: Props) {
           accessibilityLabel={`Research ${item.ticker} with news`}
           hitSlop={8}
           style={styles.research}
-          onPress={() => onResearch(item)}>
+          onPress={() => onResearch(item)}
+        >
           <ThemedText type="link">Research with news</ThemedText>
         </Pressable>
       ) : null}

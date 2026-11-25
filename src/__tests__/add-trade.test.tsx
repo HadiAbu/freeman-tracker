@@ -20,7 +20,9 @@ const patchHolding = api.patchHolding as jest.Mock;
 
 const clients: QueryClient[] = [];
 function renderScreen() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false, gcTime: Infinity } } });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false, gcTime: Infinity } },
+  });
   clients.push(client);
   return render(
     <QueryClientProvider client={client}>
@@ -33,8 +35,10 @@ async function fillTrade(extra: { sector?: string; assetClass?: string } = {}) {
   await fireEvent.changeText(screen.getByLabelText('Ticker'), 'nvda');
   await fireEvent.changeText(screen.getByLabelText('Shares'), '2');
   await fireEvent.changeText(screen.getByLabelText('Price per share (USD)'), '100');
-  if (extra.sector) await fireEvent.changeText(screen.getByLabelText('Sector (optional)'), extra.sector);
-  if (extra.assetClass) await fireEvent.changeText(screen.getByLabelText('Asset class (optional)'), extra.assetClass);
+  if (extra.sector)
+    await fireEvent.changeText(screen.getByLabelText('Sector (optional)'), extra.sector);
+  if (extra.assetClass)
+    await fireEvent.changeText(screen.getByLabelText('Asset class (optional)'), extra.assetClass);
 }
 
 const save = () => screen.getByRole('button', { name: 'Save trade' });
@@ -52,7 +56,12 @@ test('blank classification saves the trade and makes no holdings request', async
   await fireEvent.press(save());
   await waitFor(() => expect(mockBack).toHaveBeenCalled());
   expect(createTrade).toHaveBeenCalledTimes(1);
-  expect(createTrade.mock.calls[0][0]).toMatchObject({ ticker: 'NVDA', side: 'buy', shares: 2, price: 100 });
+  expect(createTrade.mock.calls[0][0]).toMatchObject({
+    ticker: 'NVDA',
+    side: 'buy',
+    shares: 2,
+    price: 100,
+  });
   expect(patchHolding).not.toHaveBeenCalled();
 });
 
@@ -71,7 +80,9 @@ test('a failed classification keeps the trade, shows a visible message and close
   await fillTrade({ sector: 'Technology' });
   await fireEvent.press(save());
   expect(
-    await screen.findByText('Trade saved, but the classification could not be saved. Set it on the position screen.'),
+    await screen.findByText(
+      'Trade saved, but the classification could not be saved. Set it on the position screen.',
+    ),
   ).toBeTruthy();
   expect(createTrade).toHaveBeenCalledTimes(1);
   expect(mockBack).not.toHaveBeenCalled();

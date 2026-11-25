@@ -40,12 +40,23 @@ export default function HoldingScreen() {
   const trades = useTickerTrades(ticker);
   const prices = usePriceHistory(ticker);
 
-  if (summary.isPending || trades.isPending) return <ThemedView style={styles.root}><LoadingState /></ThemedView>;
+  if (summary.isPending || trades.isPending)
+    return (
+      <ThemedView style={styles.root}>
+        <LoadingState />
+      </ThemedView>
+    );
   if (summary.isError || trades.isError) {
     const error = (summary.error ?? trades.error) as Error;
     return (
       <ThemedView style={styles.root}>
-        <ErrorState error={error} onRetry={() => { summary.refetch(); trades.refetch(); }} />
+        <ErrorState
+          error={error}
+          onRetry={() => {
+            summary.refetch();
+            trades.refetch();
+          }}
+        />
       </ThemedView>
     );
   }
@@ -64,7 +75,9 @@ export default function HoldingScreen() {
     <ThemedView style={styles.root}>
       <Stack.Screen options={{ title: ticker }} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {holding ? <Position holding={holding} /> : (
+        {holding ? (
+          <Position holding={holding} />
+        ) : (
           <ThemedText themeColor="textSecondary">
             {mine.length > 0 ? 'This position is closed.' : `No trades found for ${ticker}.`}
           </ThemedText>
@@ -105,7 +118,11 @@ function Position({ holding: h }: { holding: Holding }) {
   const pnlColor = h.unrealized_pnl > 0 ? 'gain' : h.unrealized_pnl < 0 ? 'loss' : undefined;
   return (
     <ThemedView type="backgroundElement" style={styles.card}>
-      {h.name ? <ThemedText type="small" themeColor="textSecondary">{h.name}</ThemedText> : null}
+      {h.name ? (
+        <ThemedText type="small" themeColor="textSecondary">
+          {h.name}
+        </ThemedText>
+      ) : null}
       <ThemedText type="title" style={styles.value}>
         {money.currency(h.market_value)}
       </ThemedText>
@@ -158,7 +175,12 @@ function Classification({ holding: h }: { holding: Holding }) {
       </ThemedText>
       <TextField label="Name" value={name} onChangeText={setName} placeholder="Apple Inc." />
       <TextField label="Sector" value={sector} onChangeText={setSector} placeholder="Technology" />
-      <TextField label="Asset class" value={assetClass} onChangeText={setAssetClass} placeholder="Stock, ETF, Bond…" />
+      <TextField
+        label="Asset class"
+        value={assetClass}
+        onChangeText={setAssetClass}
+        placeholder="Stock, ETF, Bond…"
+      />
       {save.isError ? (
         <ThemedText themeColor="loss" accessibilityRole="alert">
           {save.error.message}

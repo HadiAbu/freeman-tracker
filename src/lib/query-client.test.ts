@@ -56,7 +56,10 @@ test('going offline pauses queries and coming back online resumes them', () => {
 
 test('foregrounding the app tells React Query it has focus again', () => {
   let onChange: (state: string) => void = () => {};
-  jest.spyOn(AppState, 'addEventListener').mockImplementation(((_: string, cb: (s: string) => void) => {
+  jest.spyOn(AppState, 'addEventListener').mockImplementation(((
+    _: string,
+    cb: (s: string) => void,
+  ) => {
     onChange = cb;
     return { remove: () => {} };
   }) as never);
@@ -71,7 +74,11 @@ test('foregrounding the app tells React Query it has focus again', () => {
 test('the persisted cache is read back from device storage under the app key', async () => {
   const AsyncStorage = require('@react-native-async-storage/async-storage');
   const { mod } = load();
-  const saved = { timestamp: Date.now(), buster: mod.PERSIST_BUSTER, clientState: { mutations: [], queries: [] } };
+  const saved = {
+    timestamp: Date.now(),
+    buster: mod.PERSIST_BUSTER,
+    clientState: { mutations: [], queries: [] },
+  };
   await AsyncStorage.setItem('freeman-query-cache', JSON.stringify(saved));
   expect(await mod.queryPersister.restoreClient()).toEqual(saved);
 });

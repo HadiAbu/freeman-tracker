@@ -48,16 +48,31 @@ export default function DashboardScreen() {
   const history = usePortfolioHistory();
   const allocation = useAllocation(by);
 
-  const refreshing = refreshingPrices || summary.isRefetching || trades.isRefetching || history.isRefetching;
+  const refreshing =
+    refreshingPrices || summary.isRefetching || trades.isRefetching || history.isRefetching;
   const refresh = async () => {
     // New prices first, so the reloads below show them. A failed refresh keeps the old prices.
     await refreshPrices().catch(() => undefined);
-    await Promise.all([summary.refetch(), trades.refetch(), history.refetch(), allocation.refetch()]);
+    await Promise.all([
+      summary.refetch(),
+      trades.refetch(),
+      history.refetch(),
+      allocation.refetch(),
+    ]);
   };
 
-  if (summary.isPending) return <Screen><LoadingState /></Screen>;
+  if (summary.isPending)
+    return (
+      <Screen>
+        <LoadingState />
+      </Screen>
+    );
   if (summary.isError) {
-    return <Screen><ErrorState error={summary.error} onRetry={() => summary.refetch()} /></Screen>;
+    return (
+      <Screen>
+        <ErrorState error={summary.error} onRetry={() => summary.refetch()} />
+      </Screen>
+    );
   }
 
   const s = summary.data;
@@ -72,7 +87,8 @@ export default function DashboardScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}>
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
+      >
         <View style={styles.titleRow}>
           <ThemedText type="subtitle">Dashboard</ThemedText>
           <View style={styles.actions}>
@@ -123,11 +139,16 @@ export default function DashboardScreen() {
         <ChartCard
           title="Allocation"
           subtitle={DIMENSIONS.find((d) => d.value === by)?.label}
-          summary={slices.map((x) => `${x.label} ${x.percent.toFixed(1)} percent`).join(', ')}>
+          summary={slices.map((x) => `${x.label} ${x.percent.toFixed(1)} percent`).join(', ')}
+        >
           {allocation.isError ? (
             <ChartNote>{allocation.error.message}</ChartNote>
           ) : slices.length === 0 ? (
-            allocation.isPending ? <LoadingState /> : <ChartNote>No open positions to show yet.</ChartNote>
+            allocation.isPending ? (
+              <LoadingState />
+            ) : (
+              <ChartNote>No open positions to show yet.</ChartNote>
+            )
           ) : by !== 'ticker' && !allocation.isPlaceholderData && isAllUnassigned(slices) ? (
             <ChartNote>
               {`None of your positions has a ${by === 'sector' ? 'sector' : 'asset class'} yet. Set it when you add a trade, or on a position's screen under Classification, to group by it. Use Ticker to see your allocation now.`}
@@ -145,11 +166,17 @@ export default function DashboardScreen() {
 
         {trades.isError ? (
           // a failed request must not read as "no trades"
-          <ErrorBanner message={trades.error.message} onDismiss={() => trades.refetch()} actionLabel="Retry" />
+          <ErrorBanner
+            message={trades.error.message}
+            onDismiss={() => trades.refetch()}
+            actionLabel="Retry"
+          />
         ) : trades.isPending ? (
           <LoadingState />
         ) : trades.data.length === 0 ? (
-          <ThemedText themeColor="textSecondary">No trades yet. Add your first buy to see your portfolio here.</ThemedText>
+          <ThemedText themeColor="textSecondary">
+            No trades yet. Add your first buy to see your portfolio here.
+          </ThemedText>
         ) : (
           trades.data.map((t) => <TradeRow key={t.id} trade={t} />)
         )}
@@ -159,11 +186,20 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { gap: Spacing.three, paddingVertical: Spacing.three, paddingBottom: BottomTabInset + Spacing.four },
+  content: {
+    gap: Spacing.three,
+    paddingVertical: Spacing.three,
+    paddingBottom: BottomTabInset + Spacing.four,
+  },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   actions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   card: { padding: Spacing.four, borderRadius: Spacing.four, gap: Spacing.one },
   value: { fontSize: 40, lineHeight: 48 },
   filterRow: { gap: Spacing.two, marginTop: Spacing.two },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: Spacing.two },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: Spacing.two,
+  },
 });

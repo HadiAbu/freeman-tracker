@@ -8,8 +8,13 @@ let auth: AuthStore;
 
 const reply = (status: number, body: unknown = {}) =>
   Promise.resolve({ ok: status < 400, status, json: () => Promise.resolve(body) } as Response);
-const tokens = (n: number) => ({ access_token: `access-${n}`, refresh_token: `refresh-${n}`, expires_in: 900 });
-const stored = async () => JSON.parse((await SecureStore.getItemAsync('freeman.session')) ?? 'null');
+const tokens = (n: number) => ({
+  access_token: `access-${n}`,
+  refresh_token: `refresh-${n}`,
+  expires_in: 900,
+});
+const stored = async () =>
+  JSON.parse((await SecureStore.getItemAsync('freeman.session')) ?? 'null');
 
 beforeEach(() => {
   jest.resetModules();
@@ -30,7 +35,10 @@ test('signing in stores the refresh token in the keychain and keeps the access t
 
   const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
   expect(url).toBe('http://api.test/auth/login');
-  expect(JSON.parse(init.body as string)).toEqual({ email: 'alice@example.com', password: 'a long password' });
+  expect(JSON.parse(init.body as string)).toEqual({
+    email: 'alice@example.com',
+    password: 'a long password',
+  });
   expect(auth.useAuth.getState()).toMatchObject({ status: 'signedIn', email: 'alice@example.com' });
   expect(await stored()).toEqual({ refreshToken: 'refresh-1', email: 'alice@example.com' });
   // the access token is never written to storage
@@ -39,7 +47,9 @@ test('signing in stores the refresh token in the keychain and keeps the access t
 });
 
 test('a wrong password surfaces the server message and leaves the user signed out', async () => {
-  jest.spyOn(global, 'fetch').mockReturnValue(reply(401, { detail: 'Incorrect email or password' }));
+  jest
+    .spyOn(global, 'fetch')
+    .mockReturnValue(reply(401, { detail: 'Incorrect email or password' }));
   await expect(session.signIn('a@b.co', 'nope')).rejects.toMatchObject({
     status: 401,
     message: 'Incorrect email or password',
@@ -50,11 +60,16 @@ test('a wrong password surfaces the server message and leaves the user signed ou
 
 test('a closed registration is reported, not swallowed', async () => {
   jest.spyOn(global, 'fetch').mockReturnValue(reply(403, { detail: 'Registration is closed' }));
-  await expect(session.register('a@b.co', 'a long password')).rejects.toMatchObject({ status: 403 });
+  await expect(session.register('a@b.co', 'a long password')).rejects.toMatchObject({
+    status: 403,
+  });
 });
 
 test('a saved session opens signed in without touching the network (works offline)', async () => {
-  await SecureStore.setItemAsync('freeman.session', JSON.stringify({ refreshToken: 'refresh-1', email: 'a@b.co' }));
+  await SecureStore.setItemAsync(
+    'freeman.session',
+    JSON.stringify({ refreshToken: 'refresh-1', email: 'a@b.co' }),
+  );
   const fetchSpy = jest.spyOn(global, 'fetch');
   await session.restoreSession();
   expect(auth.useAuth.getState()).toMatchObject({ status: 'signedIn', email: 'a@b.co' });
@@ -62,16 +77,24 @@ test('a saved session opens signed in without touching the network (works offlin
 });
 
 test('the access token is fetched on first use and the rotated refresh token is saved', async () => {
-  await SecureStore.setItemAsync('freeman.session', JSON.stringify({ refreshToken: 'refresh-1', email: 'a@b.co' }));
+  await SecureStore.setItemAsync(
+    'freeman.session',
+    JSON.stringify({ refreshToken: 'refresh-1', email: 'a@b.co' }),
+  );
   await session.restoreSession();
   const fetchSpy = jest.spyOn(global, 'fetch').mockReturnValue(reply(200, tokens(2)));
   expect(await session.getAccessToken()).toBe('access-2');
-  expect(JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)).toEqual({ refresh_token: 'refresh-1' });
+  expect(JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)).toEqual({
+    refresh_token: 'refresh-1',
+  });
   expect(await stored()).toEqual({ refreshToken: 'refresh-2', email: 'a@b.co' });
 });
 
 test('parallel callers share one refresh (a second one would look like a token replay)', async () => {
-  await SecureStore.setItemAsync('freeman.session', JSON.stringify({ refreshToken: 'refresh-1', email: 'a@b.co' }));
+  await SecureStore.setItemAsync(
+    'freeman.session',
+    JSON.stringify({ refreshToken: 'refresh-1', email: 'a@b.co' }),
+  );
   await session.restoreSession();
   const fetchSpy = jest.spyOn(global, 'fetch').mockReturnValue(reply(200, tokens(2)));
   await Promise.all([session.refreshSession(), session.refreshSession(), session.getAccessToken()]);
@@ -79,16 +102,24 @@ test('parallel callers share one refresh (a second one would look like a token r
 });
 
 test('a refresh the server rejects ends the session and clears the keychain', async () => {
-  await SecureStore.setItemAsync('freeman.session', JSON.stringify({ refreshToken: 'refresh-1', email: 'a@b.co' }));
+  await SecureStore.setItemAsync(
+    'freeman.session',
+    JSON.stringify({ refreshToken: 'refresh-1', email: 'a@b.co' }),
+  );
   await session.restoreSession();
-  jest.spyOn(global, 'fetch').mockReturnValue(reply(401, { detail: 'Session expired. Sign in again.' }));
+  jest
+    .spyOn(global, 'fetch')
+    .mockReturnValue(reply(401, { detail: 'Session expired. Sign in again.' }));
   expect(await session.refreshSession()).toBe(false);
   expect(auth.useAuth.getState().status).toBe('signedOut');
   expect(await stored()).toBeNull();
 });
 
 test('being offline during a refresh is an error, not a sign-out', async () => {
-  await SecureStore.setItemAsync('freeman.session', JSON.stringify({ refreshToken: 'refresh-1', email: 'a@b.co' }));
+  await SecureStore.setItemAsync(
+    'freeman.session',
+    JSON.stringify({ refreshToken: 'refresh-1', email: 'a@b.co' }),
+  );
   await session.restoreSession();
   jest.spyOn(global, 'fetch').mockRejectedValue(new TypeError('Network request failed'));
   await expect(session.refreshSession()).rejects.toMatchObject({ status: 0 });

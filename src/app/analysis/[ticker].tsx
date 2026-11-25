@@ -104,27 +104,31 @@ export default function AnalysisScreen() {
     body = (
       <>
         <ErrorBoundary resetKeys={[analysis]}>
-        <StanceChip stance={analysis.stance} confidence={analysis.confidence} />
-        <ThemedText>{analysis.summary}</ThemedText>
-        <CaseList title="Case for" points={analysis.case_for} sourceNumbers={sourceNumbers} />
-        <CaseList title="Case against" points={analysis.case_against} sourceNumbers={sourceNumbers} />
-        {analysis.watch_for.length > 0 ? (
-          <View style={styles.block}>
-            <ThemedText type="smallBold">What would change this view</ThemedText>
-            {analysis.watch_for.map((w, i) => (
-              <View key={i} style={styles.bulletRow}>
-                <ThemedText>•</ThemedText>
-                <ThemedText style={styles.bulletText}>{w}</ThemedText>
-              </View>
-            ))}
-          </View>
-        ) : null}
-        <SourceList sources={analysis.sources} />
-        {analysis.notes.map((n, i) => (
-          <ThemedText key={i} type="small" themeColor="textSecondary">
-            {n}
-          </ThemedText>
-        ))}
+          <StanceChip stance={analysis.stance} confidence={analysis.confidence} />
+          <ThemedText>{analysis.summary}</ThemedText>
+          <CaseList title="Case for" points={analysis.case_for} sourceNumbers={sourceNumbers} />
+          <CaseList
+            title="Case against"
+            points={analysis.case_against}
+            sourceNumbers={sourceNumbers}
+          />
+          {analysis.watch_for.length > 0 ? (
+            <View style={styles.block}>
+              <ThemedText type="smallBold">What would change this view</ThemedText>
+              {analysis.watch_for.map((w, i) => (
+                <View key={i} style={styles.bulletRow}>
+                  <ThemedText>•</ThemedText>
+                  <ThemedText style={styles.bulletText}>{w}</ThemedText>
+                </View>
+              ))}
+            </View>
+          ) : null}
+          <SourceList sources={analysis.sources} />
+          {analysis.notes.map((n, i) => (
+            <ThemedText key={i} type="small" themeColor="textSecondary">
+              {n}
+            </ThemedText>
+          ))}
         </ErrorBoundary>
         <View style={styles.meta}>
           <ThemedText type="small" themeColor="textSecondary" style={styles.metaText}>
@@ -153,7 +157,10 @@ export default function AnalysisScreen() {
           </View>
         ) : null}
         {run.isError && !dismissed ? (
-          <ErrorBanner message={(run.error as Error).message} onDismiss={() => setDismissed(true)} />
+          <ErrorBanner
+            message={(run.error as Error).message}
+            onDismiss={() => setDismissed(true)}
+          />
         ) : null}
         {body}
         <ThemedText type="small" themeColor="textSecondary">
@@ -180,7 +187,12 @@ const styles = StyleSheet.create({
   bulletText: { flex: 1 },
   center: { alignItems: 'center', gap: Spacing.two, paddingVertical: Spacing.four },
   centerText: { textAlign: 'center' },
-  meta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.three },
+  meta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.three,
+  },
   metaText: { flex: 1 },
   switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
 });

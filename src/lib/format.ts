@@ -29,7 +29,8 @@ export function niceStep(raw: number): number {
 }
 
 /** Signed money, e.g. +$12.00 / -$3.50 */
-export const formatSignedCurrency = (n: number) => `${n > 0 ? '+' : n < 0 ? '-' : ''}${usd.format(Math.abs(n))}`;
+export const formatSignedCurrency = (n: number) =>
+  `${n > 0 ? '+' : n < 0 ? '-' : ''}${usd.format(Math.abs(n))}`;
 
 /** Signed percent, e.g. +4.20% */
 export const formatPercent = (n: number) => `${n > 0 ? '+' : ''}${n.toFixed(2)}%`;
@@ -52,7 +53,13 @@ export type MoneyFormatters = {
  */
 export function moneyFormatters(hidden: boolean): MoneyFormatters {
   if (!hidden) {
-    return { hidden, currency: formatCurrency, signedCurrency: formatSignedCurrency, compactCurrency: formatCompactCurrency, shares: formatShares };
+    return {
+      hidden,
+      currency: formatCurrency,
+      signedCurrency: formatSignedCurrency,
+      compactCurrency: formatCompactCurrency,
+      shares: formatShares,
+    };
   }
   const mask = () => MASK;
   return { hidden, currency: mask, signedCurrency: mask, compactCurrency: mask, shares: mask };

@@ -19,7 +19,12 @@ beforeEach(() => {
 test('asks before signing out, naming the account, and does nothing if the user backs out', async () => {
   await render(<AccountButton />);
   await fireEvent.press(screen.getByRole('button', { name: 'Sign out' }));
-  expect(mockConfirm).toHaveBeenCalledWith('Sign out?', 'Signed in as a@b.co.', 'Sign out', expect.any(Function));
+  expect(mockConfirm).toHaveBeenCalledWith(
+    'Sign out?',
+    'Signed in as a@b.co.',
+    'Sign out',
+    expect.any(Function),
+  );
   expect(mockEnd).not.toHaveBeenCalled();
 });
 

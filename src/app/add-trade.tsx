@@ -1,6 +1,14 @@
 import { useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { ThemedText } from '@/components/ui/themed-text';
@@ -92,7 +100,10 @@ export default function AddTradeScreen() {
     );
   }
 
-  const input = [styles.input, { backgroundColor: theme.backgroundElement, color: theme.text, borderColor: theme.border }];
+  const input = [
+    styles.input,
+    { backgroundColor: theme.backgroundElement, color: theme.text, borderColor: theme.border },
+  ];
 
   const field = (
     label: string,
@@ -117,7 +128,10 @@ export default function AddTradeScreen() {
 
   return (
     <ThemedView style={styles.root}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.root}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.root}
+      >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           {restored && !isEmptyDraft(draft) ? (
             <ThemedText type="small" themeColor="textSecondary">
@@ -133,9 +147,16 @@ export default function AddTradeScreen() {
                   style={styles.sideFlex}
                   accessibilityRole="button"
                   accessibilityState={{ selected: active }}
-                  onPress={() => setDraft({ side: s })}>
-                  <ThemedView type={active ? 'backgroundSelected' : 'backgroundElement'} style={styles.sideBtn}>
-                    <ThemedText type="smallBold" themeColor={active ? (s === 'buy' ? 'gain' : 'loss') : 'textSecondary'}>
+                  onPress={() => setDraft({ side: s })}
+                >
+                  <ThemedView
+                    type={active ? 'backgroundSelected' : 'backgroundElement'}
+                    style={styles.sideBtn}
+                  >
+                    <ThemedText
+                      type="smallBold"
+                      themeColor={active ? (s === 'buy' ? 'gain' : 'loss') : 'textSecondary'}
+                    >
                       {s === 'buy' ? 'Buy' : 'Sell'}
                     </ThemedText>
                   </ThemedView>
@@ -176,7 +197,11 @@ export default function AddTradeScreen() {
             autoCorrect: false,
             autoCapitalize: 'none',
           })}
-          {field('Note (optional)', null, { value: note, onChangeText: (v: string) => setDraft({ note: v }), placeholder: 'Why this trade?' })}
+          {field('Note (optional)', null, {
+            value: note,
+            onChangeText: (v: string) => setDraft({ note: v }),
+            placeholder: 'Why this trade?',
+          })}
           {field('Sector (optional)', null, {
             value: sector,
             onChangeText: (v: string) => setDraft({ sector: v }),
@@ -197,7 +222,8 @@ export default function AddTradeScreen() {
           {classificationFailed ? (
             <>
               <ThemedText accessibilityRole="alert">
-                Trade saved, but the classification could not be saved. Set it on the position screen.
+                Trade saved, but the classification could not be saved. Set it on the position
+                screen.
               </ThemedText>
               <Button title="Done" onPress={close} />
             </>
@@ -222,10 +248,27 @@ export default function AddTradeScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  content: { padding: Spacing.three, gap: Spacing.three, width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center' },
+  content: {
+    padding: Spacing.three,
+    gap: Spacing.three,
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+  },
   sides: { flexDirection: 'row', gap: Spacing.two },
   sideFlex: { flex: 1 },
-  sideBtn: { minHeight: 44, borderRadius: Spacing.three, alignItems: 'center', justifyContent: 'center' },
+  sideBtn: {
+    minHeight: 44,
+    borderRadius: Spacing.three,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   field: { gap: Spacing.one },
-  input: { minHeight: 48, borderRadius: Spacing.three, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: Spacing.three, fontSize: 16 },
+  input: {
+    minHeight: 48,
+    borderRadius: Spacing.three,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: Spacing.three,
+    fontSize: 16,
+  },
 });

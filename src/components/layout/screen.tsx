@@ -9,7 +9,10 @@ import { MaxContentWidth, Spacing, TopTabInset } from '@/constants/theme';
 export function Screen({ children }: { children: React.ReactNode }) {
   return (
     <ThemedView style={styles.root}>
-      <SafeAreaView style={[styles.safe, { paddingTop: TopTabInset }]} edges={['top', 'left', 'right']}>
+      <SafeAreaView
+        style={[styles.safe, { paddingTop: TopTabInset }]}
+        edges={['top', 'left', 'right']}
+      >
         {children}
       </SafeAreaView>
     </ThemedView>

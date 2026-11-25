@@ -22,8 +22,12 @@ export function ChipRow<T extends string>({ options, value, onChange }: Props<T>
             key={o.value}
             accessibilityRole="button"
             accessibilityState={{ selected: active }}
-            onPress={() => onChange(o.value)}>
-            <ThemedView type={active ? 'backgroundSelected' : 'backgroundElement'} style={styles.chip}>
+            onPress={() => onChange(o.value)}
+          >
+            <ThemedView
+              type={active ? 'backgroundSelected' : 'backgroundElement'}
+              style={styles.chip}
+            >
               <ThemedText type="small" themeColor={active ? 'text' : 'textSecondary'}>
                 {o.label}
               </ThemedText>
@@ -37,5 +41,9 @@ export function ChipRow<T extends string>({ options, value, onChange }: Props<T>
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  chip: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, borderRadius: Spacing.five },
+  chip: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    borderRadius: Spacing.five,
+  },
 });

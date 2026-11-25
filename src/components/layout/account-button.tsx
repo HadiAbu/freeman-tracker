@@ -14,9 +14,14 @@ export function AccountButton() {
   const email = useAuth((s) => s.email);
 
   const onPress = () =>
-    confirmDestructive('Sign out?', email ? `Signed in as ${email}.` : 'You will need to sign in again.', 'Sign out', () => {
-      void endSession();
-    });
+    confirmDestructive(
+      'Sign out?',
+      email ? `Signed in as ${email}.` : 'You will need to sign in again.',
+      'Sign out',
+      () => {
+        void endSession();
+      },
+    );
 
   return (
     <Pressable
@@ -24,7 +29,8 @@ export function AccountButton() {
       accessibilityLabel="Sign out"
       hitSlop={8}
       onPress={onPress}
-      style={styles.button}>
+      style={styles.button}
+    >
       <MaterialCommunityIcons name="logout" size={24} color={theme.text} />
     </Pressable>
   );
@@ -32,5 +38,11 @@ export function AccountButton() {
 
 const styles = StyleSheet.create({
   // 44 x 44 touch target
-  button: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', margin: -Spacing.one },
+  button: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: -Spacing.one,
+  },
 });

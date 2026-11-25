@@ -19,13 +19,24 @@ export function PrivacyToggle() {
       accessibilityState={{ checked: hidden }}
       hitSlop={8}
       onPress={toggle}
-      style={styles.button}>
-      <MaterialCommunityIcons name={hidden ? 'eye-off-outline' : 'eye-outline'} size={24} color={theme.text} />
+      style={styles.button}
+    >
+      <MaterialCommunityIcons
+        name={hidden ? 'eye-off-outline' : 'eye-outline'}
+        size={24}
+        color={theme.text}
+      />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   // 44 x 44 touch target
-  button: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', margin: -Spacing.one },
+  button: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: -Spacing.one,
+  },
 });

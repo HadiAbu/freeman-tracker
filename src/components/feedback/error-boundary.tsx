@@ -61,7 +61,11 @@ export class ErrorBoundary extends React.Component<Props, State> {
     if (fallback !== undefined) return fallback;
     // The message is generic on purpose: the real error goes to `reportError`, never to the screen.
     return (
-      <ErrorBanner message="This section could not be shown." actionLabel="Try again" onDismiss={this.reset} />
+      <ErrorBanner
+        message="This section could not be shown."
+        actionLabel="Try again"
+        onDismiss={this.reset}
+      />
     );
   }
 }

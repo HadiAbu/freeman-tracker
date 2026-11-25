@@ -17,7 +17,11 @@ export function TextField({ label, error, style, ...props }: Props) {
         placeholderTextColor={theme.textSecondary}
         style={[
           styles.input,
-          { backgroundColor: theme.backgroundElement, color: theme.text, borderColor: theme.border },
+          {
+            backgroundColor: theme.backgroundElement,
+            color: theme.text,
+            borderColor: theme.border,
+          },
           style,
         ]}
         {...props}

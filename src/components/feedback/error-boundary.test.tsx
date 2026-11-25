@@ -72,7 +72,9 @@ test('a custom fallback can be a node or a function that receives the error and 
 
   broken.now = true;
   await render(
-    <ErrorBoundary fallback={({ error, reset }) => <Text onPress={reset}>{`failed: ${error.message}`}</Text>}>
+    <ErrorBoundary
+      fallback={({ error, reset }) => <Text onPress={reset}>{`failed: ${error.message}`}</Text>}
+    >
       <Flaky />
     </ErrorBoundary>,
   );

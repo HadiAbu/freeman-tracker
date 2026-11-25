@@ -72,7 +72,13 @@ export function useCreateTrade() {
 export function useCreateTradeWithClassification() {
   const invalidate = useInvalidateAfterTradeChange();
   return useMutation({
-    mutationFn: async ({ trade, classification }: { trade: NewTrade; classification: HoldingMeta | null }) => {
+    mutationFn: async ({
+      trade,
+      classification,
+    }: {
+      trade: NewTrade;
+      classification: HoldingMeta | null;
+    }) => {
       const created = await api.createTrade(trade);
       let classificationFailed = false;
       if (classification) {
