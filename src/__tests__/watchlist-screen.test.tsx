@@ -30,15 +30,16 @@ beforeEach(() => {
   deleteWatch.mockResolvedValue(undefined);
 });
 
-test('lists watched tickers with their target status and last price', async () => {
+test('lists watched tickers with their alert status and last price', async () => {
   listWatchlist.mockResolvedValue([
-    watchItem({ id: 1, ticker: 'AAPL', price: 180, target_price: 200, pct_to_target: 11.11 }),
+    watchItem({ id: 1, ticker: 'AAPL', price: 180, upper_limit: 200, pct_to_target: 11.11 }),
     watchItem({
       id: 2,
       ticker: 'MSFT',
       name: 'Microsoft',
       price: 410,
-      target_price: 400,
+      upper_limit: 400,
+      upper_state: 'triggered',
       pct_to_target: -2.4,
     }),
     watchItem({
@@ -48,14 +49,14 @@ test('lists watched tickers with their target status and last price', async () =
       price: null,
       price_kind: null,
       price_as_of: null,
-      target_price: null,
+      upper_limit: null,
       pct_to_target: null,
     }),
   ]);
   await renderWithClient(<WatchlistScreen />);
-  expect(await screen.findByText('Target $200.00 · +11.11% to go')).toBeTruthy();
-  expect(screen.getByText(/Target \$400\.00 reached/)).toBeTruthy();
-  expect(screen.getByText('No target set')).toBeTruthy();
+  expect(await screen.findByText('Alert above $200.00 · +11.11% to go')).toBeTruthy();
+  expect(screen.getByText(/Alert above \$400\.00 · paused/)).toBeTruthy();
+  expect(screen.getByText('No alerts set')).toBeTruthy();
   expect(screen.getByText('No price yet')).toBeTruthy();
 });
 
