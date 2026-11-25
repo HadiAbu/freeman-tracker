@@ -42,6 +42,31 @@ server from starting (the error says how long it was, never what it was).
 existing price marks are assigned to id 1 on startup. The first account you create gets id 1 and so
 inherits everything. Create it before enabling registration.
 
+## Price alerts
+
+Each watchlist item can have an upper and a lower limit. While the server is running it checks every
+`ALERT_CHECK_SECONDS` (120) and emails the address saved under Email alerts in the app when a price
+reaches a limit. It emails once, re-arms when the price is back between the limits, and sends at most
+one email per item per hour (`ALERT_COOLDOWN_SECONDS`, 3600). Alerts only fire while the server is
+running and can reach Finnhub and your mail server. Needs `FINNHUB_API_KEY`, `SMTP_USER` and
+`SMTP_PASSWORD` (see `.env.example`).
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET/PUT /alerts/settings` | Read or set the alert email address |
+| `POST /alerts/test` | Send a test email to the saved address |
+
+Operating notes:
+
+- Run exactly one server process. Every uvicorn worker (`--workers N`) starts its own alert checker,
+  so alerts would be emailed more than once. (`--reload` is fine: only the worker process runs the
+  checker.)
+- `POST /alerts/test` has no rate limit and the alert address is not verified. That is acceptable only
+  because registration is off by default (`ALLOW_REGISTRATION=false`) and accounts are created by the
+  owner. Do not turn registration on without first adding a per-user cooldown on the test email and
+  verifying alert addresses, or anyone could use the server's mail account to send mail to arbitrary
+  addresses.
+
 ## Endpoints (all but `/health` and `/auth/*` need a bearer token)
 
 | | |
