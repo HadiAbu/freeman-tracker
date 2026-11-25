@@ -1,8 +1,8 @@
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { ThemedText } from '@/components/ui/themed-text';
+import { ThemedView } from '@/components/ui/themed-view';
 import { Spacing } from '@/constants/theme';
 import { formatCurrency, formatPercent } from '@/lib/format';
 import { isStalePrice, priceLabel } from '@/lib/price-label';

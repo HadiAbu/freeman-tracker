@@ -3,12 +3,12 @@ import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ChartCard } from '@/components/charts/chart-card';
 import { PnLBars } from '@/components/charts/pnl-bars';
-import { HoldingRow } from '@/components/holding-row';
-import { PriceUpdated } from '@/components/price-updated';
-import { PrivacyToggle } from '@/components/privacy-toggle';
-import { Screen } from '@/components/screen';
-import { EmptyState, ErrorState, LoadingState } from '@/components/screen-state';
-import { ThemedText } from '@/components/themed-text';
+import { HoldingRow } from '@/components/rows/holding-row';
+import { PriceUpdated } from '@/components/prices/price-updated';
+import { PrivacyToggle } from '@/components/ui/privacy-toggle';
+import { Screen } from '@/components/layout/screen';
+import { EmptyState, ErrorState, LoadingState } from '@/components/feedback/screen-state';
+import { ThemedText } from '@/components/ui/themed-text';
 import { BottomTabInset, Spacing } from '@/constants/theme';
 import { useRefreshPrices } from '@/hooks/use-market-prices';
 import { useMoney } from '@/hooks/use-money';

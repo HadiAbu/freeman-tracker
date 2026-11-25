@@ -2,9 +2,9 @@ import { useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
-import { Button } from '@/components/button';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/ui/button';
+import { ThemedText } from '@/components/ui/themed-text';
+import { ThemedView } from '@/components/ui/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useCreateTradeWithClassification } from '@/hooks/use-trades';
 import { useTheme } from '@/hooks/use-theme';

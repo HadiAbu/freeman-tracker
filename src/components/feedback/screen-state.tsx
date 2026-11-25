@@ -1,8 +1,8 @@
 import React from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
-import { Button } from '@/components/button';
-import { ThemedText } from '@/components/themed-text';
+import { Button } from '@/components/ui/button';
+import { ThemedText } from '@/components/ui/themed-text';
 import { Spacing } from '@/constants/theme';
 
 export function LoadingState() {

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { Button } from '@/components/button';
-import { TextField } from '@/components/text-field';
+import { Button } from '@/components/ui/button';
+import { TextField } from '@/components/ui/text-field';
 import { Spacing } from '@/constants/theme';
 
 const TICKER = /^[A-Za-z0-9.\-]{1,15}$/;

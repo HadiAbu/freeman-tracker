@@ -2,10 +2,10 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 
-import { Button } from '@/components/button';
-import { TextField } from '@/components/text-field';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/ui/button';
+import { TextField } from '@/components/ui/text-field';
+import { ThemedText } from '@/components/ui/themed-text';
+import { ThemedView } from '@/components/ui/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAddPrice } from '@/hooks/use-watchlist';
 import { haptic } from '@/lib/haptics';

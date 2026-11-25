@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import React from 'react';
 
-import { AccountButton } from '@/components/account-button';
+import { AccountButton } from '@/components/layout/account-button';
 import { useAuth } from '@/stores/auth';
 
 const mockEnd = jest.fn();

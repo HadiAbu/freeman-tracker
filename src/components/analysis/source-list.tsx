@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
+import { ThemedText } from '@/components/ui/themed-text';
 import { Spacing } from '@/constants/theme';
 import { isSafeHttpsUrl, openSafeLink } from '@/lib/safe-link';
 import { timeAgo } from '@/lib/time-ago';

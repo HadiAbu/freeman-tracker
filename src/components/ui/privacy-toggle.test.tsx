@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import React from 'react';
 
-import { PrivacyToggle } from '@/components/privacy-toggle';
+import { PrivacyToggle } from '@/components/ui/privacy-toggle';
 import { usePreferences } from '@/stores/preferences';
 
 const toggle = () => screen.getByRole('switch', { name: 'Hide balances' });

@@ -2,7 +2,7 @@ import { render } from '@testing-library/react-native';
 import React from 'react';
 import { AppState } from 'react-native';
 
-import { MIN_AUTO_REFRESH_MS, PriceAutoRefresh } from '@/components/price-auto-refresh';
+import { MIN_AUTO_REFRESH_MS, PriceAutoRefresh } from '@/components/prices/price-auto-refresh';
 import { usePriceStatus } from '@/stores/price-status';
 
 const mockMutate = jest.fn();

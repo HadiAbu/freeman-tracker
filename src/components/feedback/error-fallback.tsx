@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
 
-import { Button } from '@/components/button';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/ui/button';
+import { ThemedText } from '@/components/ui/themed-text';
+import { ThemedView } from '@/components/ui/themed-view';
 import { Spacing } from '@/constants/theme';
 import { reportError } from '@/lib/error-reporting';
 

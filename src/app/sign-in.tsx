@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 
-import { Button } from '@/components/button';
+import { Button } from '@/components/ui/button';
 import { ErrorBanner } from '@/components/feedback/error-banner';
-import { Screen } from '@/components/screen';
-import { TextField } from '@/components/text-field';
-import { ThemedText } from '@/components/themed-text';
+import { Screen } from '@/components/layout/screen';
+import { TextField } from '@/components/ui/text-field';
+import { ThemedText } from '@/components/ui/themed-text';
 import { Spacing } from '@/constants/theme';
 import { AuthError, register, signIn } from '@/lib/session';
 

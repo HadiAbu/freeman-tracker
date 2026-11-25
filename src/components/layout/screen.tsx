@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ThemedView } from '@/components/themed-view';
+import { ThemedView } from '@/components/ui/themed-view';
 import { MaxContentWidth, Spacing, TopTabInset } from '@/constants/theme';
 
 /** Themed full-screen container with a centered, width-capped content column. */

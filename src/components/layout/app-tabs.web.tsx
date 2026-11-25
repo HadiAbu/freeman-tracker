@@ -9,8 +9,8 @@ import {
 import React from 'react';
 import { Pressable, type PressableProps, View, StyleSheet } from 'react-native';
 
-import { ThemedText } from './themed-text';
-import { ThemedView } from './themed-view';
+import { ThemedText } from '@/components/ui/themed-text';
+import { ThemedView } from '@/components/ui/themed-view';
 
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 

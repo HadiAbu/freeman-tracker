@@ -5,8 +5,8 @@ import React, { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
 import { ErrorFallback } from '@/components/feedback/error-fallback';
-import { PriceAutoRefresh } from '@/components/price-auto-refresh';
-import { AnimatedSplashOverlay } from '@/components/splash-overlay';
+import { PriceAutoRefresh } from '@/components/prices/price-auto-refresh';
+import { AnimatedSplashOverlay } from '@/components/layout/splash-overlay';
 import { PERSIST_BUSTER, PERSIST_MAX_AGE, queryClient, queryPersister } from '@/lib/query-client';
 import { restoreSession } from '@/lib/session';
 import { useStoresReady } from '@/stores';

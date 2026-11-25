@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react-native';
 import React from 'react';
 
-import { PriceUpdated } from '@/components/price-updated';
+import { PriceUpdated } from '@/components/prices/price-updated';
 import { usePriceStatus } from '@/stores/price-status';
 
 const reset = { lastFetchedAt: null, failedCount: 0, unavailable: false };

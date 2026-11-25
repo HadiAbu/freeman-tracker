@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import React from 'react';
 
-import { ResearchBox } from '@/components/research-box';
+import { ResearchBox } from '@/components/analysis/research-box';
 
 test('submits an upper-cased, trimmed ticker', async () => {
   const onSubmit = jest.fn();
