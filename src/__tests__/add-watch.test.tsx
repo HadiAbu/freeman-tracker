@@ -27,13 +27,15 @@ test('saves a normalized item and closes', async () => {
   await renderWithClient(<AddWatchScreen />);
   await fireEvent.changeText(screen.getByLabelText('Ticker'), ' nvda ');
   await fireEvent.changeText(screen.getByLabelText('Name (optional)'), ' NVIDIA ');
-  await fireEvent.changeText(screen.getByLabelText('Target price (optional)'), '500,5');
+  await fireEvent.changeText(screen.getByLabelText('Alert above (optional)'), '500,5');
+  await fireEvent.changeText(screen.getByLabelText('Alert below (optional)'), '350');
   await fireEvent.press(save());
   await waitFor(() => expect(mockBack).toHaveBeenCalled());
   expect(addWatch).toHaveBeenCalledWith({
     ticker: 'NVDA',
     name: 'NVIDIA',
-    target_price: 500.5,
+    upper_limit: 500.5,
+    lower_limit: 350,
     note: null,
   });
 });
@@ -46,7 +48,8 @@ test('blank optional fields are sent as null, not empty strings or zero', async 
   expect(addWatch).toHaveBeenCalledWith({
     ticker: 'AAPL',
     name: null,
-    target_price: null,
+    upper_limit: null,
+    lower_limit: null,
     note: null,
   });
 });
@@ -63,15 +66,28 @@ test.each(['', 'A B', 'x'.repeat(16), 'AAPL;DROP'])(
   },
 );
 
-test('rejects a negative or non-numeric target', async () => {
+test.each([
+  ['Alert above (optional)', '-5'],
+  ['Alert above (optional)', 'abc'],
+  ['Alert above (optional)', '0'],
+  ['Alert below (optional)', '-5'],
+  ['Alert below (optional)', 'abc'],
+])('rejects %p = %p without a request', async (label, value) => {
   await renderWithClient(<AddWatchScreen />);
   await fireEvent.changeText(screen.getByLabelText('Ticker'), 'AAPL');
-  await fireEvent.changeText(screen.getByLabelText('Target price (optional)'), '-5');
+  await fireEvent.changeText(screen.getByLabelText(label), value);
   await fireEvent.press(save());
-  expect(screen.getByText('Target must be 0 or more')).toBeTruthy();
-  await fireEvent.changeText(screen.getByLabelText('Target price (optional)'), 'abc');
+  expect(screen.getByText('Enter a price above 0')).toBeTruthy();
+  expect(addWatch).not.toHaveBeenCalled();
+});
+
+test('the lower limit must be below the upper limit', async () => {
+  await renderWithClient(<AddWatchScreen />);
+  await fireEvent.changeText(screen.getByLabelText('Ticker'), 'AAPL');
+  await fireEvent.changeText(screen.getByLabelText('Alert above (optional)'), '100');
+  await fireEvent.changeText(screen.getByLabelText('Alert below (optional)'), '100');
   await fireEvent.press(save());
-  expect(screen.getByText('Target must be 0 or more')).toBeTruthy();
+  expect(screen.getByText('Must be below the upper limit')).toBeTruthy();
   expect(addWatch).not.toHaveBeenCalled();
 });
 

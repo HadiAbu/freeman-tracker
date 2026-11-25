@@ -247,3 +247,31 @@ describe('authentication', () => {
     });
   });
 });
+
+describe('alerts', () => {
+  test('reads the alert settings', async () => {
+    const spy = jest
+      .spyOn(global, 'fetch')
+      .mockReturnValue(json(200, { email: null, email_configured: false }));
+    expect(await api.getAlertSettings()).toEqual({ email: null, email_configured: false });
+    expect(lastCall(spy).url).toBe('http://api.test/alerts/settings');
+  });
+
+  test('saves the address with PUT, and null clears it', async () => {
+    const spy = jest
+      .spyOn(global, 'fetch')
+      .mockReturnValue(json(200, { email: 'me@mail.com', email_configured: true }));
+    await api.saveAlertSettings('me@mail.com');
+    expect(lastCall(spy).init.method).toBe('PUT');
+    expect(lastCall(spy).init.body).toBe(JSON.stringify({ email: 'me@mail.com' }));
+    await api.saveAlertSettings(null);
+    expect(lastCall(spy).init.body).toBe(JSON.stringify({ email: null }));
+  });
+
+  test('sends a test email with POST', async () => {
+    const spy = jest.spyOn(global, 'fetch').mockReturnValue(json(200, { sent_to: 'me@mail.com' }));
+    expect(await api.sendTestAlert()).toEqual({ sent_to: 'me@mail.com' });
+    expect(lastCall(spy).url).toBe('http://api.test/alerts/test');
+    expect(lastCall(spy).init.method).toBe('POST');
+  });
+});
