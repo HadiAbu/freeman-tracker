@@ -40,14 +40,16 @@ class TradePatch(BaseModel):
 class WatchIn(BaseModel):
     ticker: str
     name: Optional[str] = None
-    target_price: Optional[float] = Field(default=None, ge=0)
+    upper_limit: Optional[float] = Field(default=None, gt=0)  # email when the price reaches it
+    lower_limit: Optional[float] = Field(default=None, gt=0)  # email when it falls to it
     note: Optional[str] = None
     _t = field_validator("ticker")(_ticker)
 
 
 class WatchPatch(BaseModel):
     name: Optional[str] = None
-    target_price: Optional[float] = Field(default=None, ge=0)
+    upper_limit: Optional[float] = Field(default=None, gt=0)
+    lower_limit: Optional[float] = Field(default=None, gt=0)
     note: Optional[str] = None
 
 

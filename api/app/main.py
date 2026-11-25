@@ -22,11 +22,13 @@ from app.portfolio import (
     first_trade_order,
     value_history,
 )
+from app.alerts import ARMED, initial_state
 from app.ledger import (
     PRICE_VISIBLE,
     all_trades as _all_trades,
     latest_marks as _latest_marks,
     price_kind as _price_kind,
+    latest_price as _latest_price,
     latest_prices as _latest_prices,
     meta as _meta,
     positions as _positions,
@@ -164,13 +166,44 @@ def delete_trade(trade_id: int, uid: int = Depends(current_user_id), conn=Depend
 
 
 # ---------- watchlist ----------
+def _check_limits(upper: float | None, lower: float | None) -> None:
+    if upper is not None and lower is not None and lower >= upper:
+        raise HTTPException(422, "The lower limit must be below the upper limit.")
+
+
+def _limit_states(conn, uid: int, ticker: str, upper, lower, old: dict | None) -> dict:
+    """The alert state to store for each limit. A limit that did not change keeps its state; a new
+    or changed one is judged against the latest price (see alerts.initial_state)."""
+    price = _latest_price(conn, uid, ticker)
+    states = {}
+    for side, new in (("upper", upper), ("lower", lower)):
+        if new is None:
+            states[f"{side}_state"] = ARMED
+        elif old is not None and old[f"{side}_limit"] == new:
+            states[f"{side}_state"] = old[f"{side}_state"]
+        else:
+            states[f"{side}_state"] = initial_state(side, price, new)
+    return states
+
+
 @app.post("/watchlist", status_code=201)
 def add_watch(body: WatchIn, uid: int = Depends(current_user_id), conn=Depends(get_conn)):
+    _check_limits(body.upper_limit, body.lower_limit)
+    old = one(
+        conn.execute("SELECT * FROM watchlist WHERE user_id = ? AND ticker = ?", (uid, body.ticker))
+    )
+    st = _limit_states(conn, uid, body.ticker, body.upper_limit, body.lower_limit, old)
     conn.execute(
-        "INSERT INTO watchlist (user_id, ticker, name, target_price, note) VALUES (?, ?, ?, ?, ?)"
-        " ON CONFLICT (user_id, ticker) DO UPDATE SET"
-        " name = excluded.name, target_price = excluded.target_price, note = excluded.note",
-        (uid, body.ticker, body.name, body.target_price, body.note),
+        "INSERT INTO watchlist (user_id, ticker, name, upper_limit, lower_limit, upper_state,"
+        " lower_state, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+        " ON CONFLICT (user_id, ticker) DO UPDATE SET name = excluded.name,"
+        " upper_limit = excluded.upper_limit, lower_limit = excluded.lower_limit,"
+        " upper_state = excluded.upper_state, lower_state = excluded.lower_state,"
+        " note = excluded.note",
+        (
+            uid, body.ticker, body.name, body.upper_limit, body.lower_limit,
+            st["upper_state"], st["lower_state"], body.note,
+        ),
     )
     conn.commit()
     return one(
@@ -187,7 +220,7 @@ def list_watch(uid: int = Depends(current_user_id), conn=Depends(get_conn)):
         w["price"] = mark["price"] if mark else None
         w["price_as_of"] = mark["as_of"] if mark else None
         w["price_kind"] = _price_kind(mark["source"]) if mark else None
-        t = w["target_price"]
+        t = w["upper_limit"]
         w["pct_to_target"] = (
             (t - w["price"]) / w["price"] * 100 if t is not None and w["price"] else None
         )
@@ -198,13 +231,20 @@ def list_watch(uid: int = Depends(current_user_id), conn=Depends(get_conn)):
 def patch_watch(
     item_id: int, body: WatchPatch, uid: int = Depends(current_user_id), conn=Depends(get_conn)
 ):
-    if not one(conn.execute("SELECT id FROM watchlist WHERE id = ? AND user_id = ?", (item_id, uid))):
+    old = one(conn.execute("SELECT * FROM watchlist WHERE id = ? AND user_id = ?", (item_id, uid)))
+    if not old:
         raise HTTPException(404, "Watchlist item not found")
     changes = body.model_dump(exclude_unset=True)
+    upper = changes.get("upper_limit", old["upper_limit"])
+    lower = changes.get("lower_limit", old["lower_limit"])
+    _check_limits(upper, lower)
+    if "upper_limit" in changes or "lower_limit" in changes:
+        changes.update(_limit_states(conn, uid, old["ticker"], upper, lower, old))
     if changes:
         sets = ", ".join(f"{k} = ?" for k in changes)
         conn.execute(
-            f"UPDATE watchlist SET {sets} WHERE id = ? AND user_id = ?", (*changes.values(), item_id, uid)
+            f"UPDATE watchlist SET {sets} WHERE id = ? AND user_id = ?",
+            (*changes.values(), item_id, uid),
         )
         conn.commit()
     return one(conn.execute("SELECT * FROM watchlist WHERE id = ? AND user_id = ?", (item_id, uid)))

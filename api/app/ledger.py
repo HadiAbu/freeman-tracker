@@ -68,6 +68,18 @@ def latest_prices(conn, user_id: int) -> dict[str, float]:
     return {t: m["price"] for t, m in latest_marks(conn, user_id).items()}
 
 
+def latest_price(conn, user_id: int, ticker: str) -> float | None:
+    """Newest visible price for one ticker (same rule as latest_marks), or None."""
+    r = one(
+        conn.execute(
+            f"SELECT price FROM prices WHERE ticker = ? AND {PRICE_VISIBLE}"
+            f" ORDER BY {_LATEST_ORDER} LIMIT 1",
+            (ticker, user_id),
+        )
+    )
+    return r["price"] if r else None
+
+
 def price_kind(source: str | None) -> str:
     """How a price should be described to the user: typed by hand, or from the market."""
     return "manual" if source in (None, "manual") else "market"
