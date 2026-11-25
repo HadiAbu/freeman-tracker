@@ -27,58 +27,62 @@ function targetStatus(item: WatchItem): { text: string; color?: 'gain' } {
 export function WatchRow({ item, onPress, onLongPress, onResearch }: Props) {
   const status = targetStatus(item);
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${item.ticker}, tap to log a price, long press to remove`}
-      onPress={() => onPress(item)}
-      onLongPress={() => onLongPress(item)}>
-      <ThemedView type="backgroundElement" style={styles.row}>
-        <View style={styles.left}>
-          <ThemedText type="smallBold">{item.ticker}</ThemedText>
-          {item.name ? (
-            <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
-              {item.name}
+    <ThemedView type="backgroundElement" style={styles.card}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${item.ticker}, tap to log a price, long press to remove`}
+        onPress={() => onPress(item)}
+        onLongPress={() => onLongPress(item)}>
+        <View style={styles.row}>
+          <View style={styles.left}>
+            <ThemedText type="smallBold">{item.ticker}</ThemedText>
+            {item.name ? (
+              <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+                {item.name}
+              </ThemedText>
+            ) : null}
+            <ThemedText type="small" themeColor={status.color ?? 'textSecondary'}>
+              {status.color ? '✓ ' : ''}
+              {status.text}
             </ThemedText>
-          ) : null}
-          <ThemedText type="small" themeColor={status.color ?? 'textSecondary'}>
-            {status.color ? '✓ ' : ''}
-            {status.text}
-          </ThemedText>
-          {item.note ? (
-            <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
-              {item.note}
+            {item.note ? (
+              <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+                {item.note}
+              </ThemedText>
+            ) : null}
+          </View>
+          <View style={styles.right}>
+            <ThemedText type="smallBold">{item.price === null ? '—' : formatCurrency(item.price)}</ThemedText>
+            <ThemedText type="small" themeColor={isStalePrice(item.price_as_of) ? 'loss' : 'textSecondary'}>
+              {priceLabel(item.price_kind, item.price_as_of)}
             </ThemedText>
-          ) : null}
-          {onResearch ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Research ${item.ticker} with news`}
-              hitSlop={8}
-              onPress={() => onResearch(item)}>
-              <ThemedText type="link">Research with news</ThemedText>
-            </Pressable>
-          ) : null}
+          </View>
         </View>
-        <View style={styles.right}>
-          <ThemedText type="smallBold">{item.price === null ? '—' : formatCurrency(item.price)}</ThemedText>
-          <ThemedText type="small" themeColor={isStalePrice(item.price_as_of) ? 'loss' : 'textSecondary'}>
-            {priceLabel(item.price_kind, item.price_as_of)}
-          </ThemedText>
-        </View>
-      </ThemedView>
-    </Pressable>
+      </Pressable>
+      {/* A sibling of the row button, not a child: a button inside a button is invalid HTML on web. */}
+      {onResearch ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Research ${item.ticker} with news`}
+          hitSlop={8}
+          style={styles.research}
+          onPress={() => onResearch(item)}>
+          <ThemedText type="link">Research with news</ThemedText>
+        </Pressable>
+      ) : null}
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
+  card: { padding: Spacing.three, borderRadius: Spacing.three, gap: Spacing.half },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: Spacing.three,
-    padding: Spacing.three,
-    borderRadius: Spacing.three,
   },
+  research: { alignSelf: 'flex-start' },
   left: { flex: 1, gap: Spacing.half },
   right: { alignItems: 'flex-end', gap: Spacing.half },
 });
