@@ -1,3 +1,4 @@
+import logging
 import threading
 from contextlib import asynccontextmanager
 from dataclasses import asdict
@@ -7,13 +8,14 @@ from typing import Literal
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.alert_loop import start_alert_loop
 from app.alert_routes import router as alert_router
 from app.analysis.routes import router as analysis_router
 from app.auth import current_user_id
 from app.auth_routes import router as auth_router
 from app.market_routes import router as market_router
 from app.config import get_settings
-from app.db import get_conn, init_schema, one, rows
+from app.db import connect, get_conn, init_schema, one, rows
 from app.models import HoldingMeta, PriceIn, TradeIn, TradePatch, WatchIn, WatchPatch
 from app.portfolio import (
     OversellError,
@@ -46,7 +48,19 @@ async def lifespan(_app: FastAPI):
         init_schema(conn)
     finally:
         gen.close()
+
+    # The price alert checker lives as long as the server. It starts only when market data and
+    # email are configured (see start_alert_loop). A failure to start it must not stop the API.
+    stop = threading.Event()
+    try:
+        settings = _app.dependency_overrides.get(get_settings, get_settings)()
+        start_alert_loop(
+            settings, lambda: connect(settings.turso_database_url, settings.turso_auth_token), stop
+        )
+    except Exception:
+        logging.getLogger("freeman.alerts").exception("price alerts could not start")
     yield
+    stop.set()
 
 
 app = FastAPI(title="Freeman API", version="0.1.0", lifespan=lifespan)
