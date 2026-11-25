@@ -132,3 +132,10 @@ test('a failed removal shows the error and it can be dismissed', async () => {
   await fireEvent.press(screen.getByRole('button', { name: 'Dismiss' }));
   expect(screen.queryByText('Item not found')).toBeNull();
 });
+
+test('opens the Email alerts settings', async () => {
+  await renderWithClient(<WatchlistScreen />);
+  await screen.findByText('AAPL');
+  await fireEvent.press(screen.getByRole('button', { name: 'Email alerts' }));
+  expect(mockPush).toHaveBeenLastCalledWith('/alert-settings');
+});
