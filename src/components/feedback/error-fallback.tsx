@@ -10,11 +10,11 @@ import { reportError } from '@/lib/error-reporting';
 type Props = { error: Error; retry: () => Promise<void> | void };
 
 /**
- * Fallback for an uncaught render error. Expo Router renders this in place of the broken route
+ * Full-screen fallback for a render error nothing else caught. Expo Router renders this in place of the broken route
  * when it is exported as `ErrorBoundary` from a layout. The message is deliberately generic:
  * the real error goes to `reportError`, not to the screen.
  */
-export function AppErrorScreen({ error, retry }: Props) {
+export function ErrorFallback({ error, retry }: Props) {
   useEffect(() => {
     reportError(error);
   }, [error]);

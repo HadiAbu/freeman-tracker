@@ -5,8 +5,9 @@ import { ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { CaseList } from '@/components/analysis/case-list';
 import { SourceList } from '@/components/analysis/source-list';
 import { StanceChip } from '@/components/analysis/stance-chip';
+import { ErrorBoundary } from '@/components/feedback/error-boundary';
 import { Button } from '@/components/button';
-import { ErrorBanner } from '@/components/error-banner';
+import { ErrorBanner } from '@/components/feedback/error-banner';
 import { ErrorState, LoadingState } from '@/components/screen-state';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -98,8 +99,11 @@ export default function AnalysisScreen() {
   } else {
     const sourceNumbers: Record<string, number> = {};
     analysis.sources.forEach((s, i) => (sourceNumbers[s.id] = i + 1));
+    // The analysis is model output, so a malformed payload is a realistic way to crash: contain it
+    // here. Refresh stays outside the boundary so a broken analysis can still be regenerated.
     body = (
       <>
+        <ErrorBoundary resetKeys={[analysis]}>
         <StanceChip stance={analysis.stance} confidence={analysis.confidence} />
         <ThemedText>{analysis.summary}</ThemedText>
         <CaseList title="Case for" points={analysis.case_for} sourceNumbers={sourceNumbers} />
@@ -121,6 +125,7 @@ export default function AnalysisScreen() {
             {n}
           </ThemedText>
         ))}
+        </ErrorBoundary>
         <View style={styles.meta}>
           <ThemedText type="small" themeColor="textSecondary" style={styles.metaText}>
             Generated {timeAgo(analysis.generated_at)}

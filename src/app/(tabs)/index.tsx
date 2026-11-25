@@ -7,7 +7,7 @@ import { AllocationDonut } from '@/components/charts/allocation-donut';
 import { ChartCard, ChartNote } from '@/components/charts/chart-card';
 import { TrendLine } from '@/components/charts/trend-line';
 import { ChipRow } from '@/components/chip-row';
-import { ErrorBanner } from '@/components/error-banner';
+import { ErrorBanner } from '@/components/feedback/error-banner';
 import { AccountButton } from '@/components/account-button';
 import { PriceUpdated } from '@/components/price-updated';
 import { PrivacyToggle } from '@/components/privacy-toggle';

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 
 import { Button } from '@/components/button';
-import { ErrorBanner } from '@/components/error-banner';
+import { ErrorBanner } from '@/components/feedback/error-banner';
 import { Screen } from '@/components/screen';
 import { TextField } from '@/components/text-field';
 import { ThemedText } from '@/components/themed-text';

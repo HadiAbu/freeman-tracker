@@ -4,7 +4,7 @@ import { Stack } from 'expo-router';
 import React, { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
-import { AppErrorScreen } from '@/components/app-error-screen';
+import { ErrorFallback } from '@/components/feedback/error-fallback';
 import { PriceAutoRefresh } from '@/components/price-auto-refresh';
 import { AnimatedSplashOverlay } from '@/components/splash-overlay';
 import { PERSIST_BUSTER, PERSIST_MAX_AGE, queryClient, queryPersister } from '@/lib/query-client';
@@ -12,8 +12,9 @@ import { restoreSession } from '@/lib/session';
 import { useStoresReady } from '@/stores';
 import { useAuth } from '@/stores/auth';
 
-// Expo Router renders this instead of the route when a screen throws while rendering.
-export const ErrorBoundary = AppErrorScreen;
+// Expo Router renders this instead of the route when a screen throws while rendering. It is the
+// last line of defence; sections that can fail on their own are wrapped in <ErrorBoundary>.
+export const ErrorBoundary = ErrorFallback;
 
 // Route guard: signed-out users can only reach the sign-in screen, signed-in users can reach
 // everything else. Expo Router redirects automatically when `signedIn` changes, so signing out

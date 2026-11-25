@@ -3,7 +3,7 @@ import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
-import { ErrorBanner } from '@/components/error-banner';
+import { ErrorBanner } from '@/components/feedback/error-banner';
 import { Screen } from '@/components/screen';
 import { EmptyState, ErrorState, LoadingState } from '@/components/screen-state';
 import { ThemedText } from '@/components/themed-text';

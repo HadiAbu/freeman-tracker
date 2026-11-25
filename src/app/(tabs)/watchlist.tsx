@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
-import { ErrorBanner } from '@/components/error-banner';
+import { ErrorBanner } from '@/components/feedback/error-banner';
 import { PriceUpdated } from '@/components/price-updated';
 import { ResearchBox } from '@/components/research-box';
 import { Screen } from '@/components/screen';
