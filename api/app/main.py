@@ -7,6 +7,7 @@ from typing import Literal
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.alert_routes import router as alert_router
 from app.analysis.routes import router as analysis_router
 from app.auth import current_user_id
 from app.auth_routes import router as auth_router
@@ -59,6 +60,7 @@ if _origins:
 app.include_router(auth_router)
 app.include_router(analysis_router)
 app.include_router(market_router)
+app.include_router(alert_router)
 
 
 @app.get("/health")
