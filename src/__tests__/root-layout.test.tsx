@@ -25,8 +25,30 @@ jest.mock('expo-router', () => {
   Stack.Protected = function Protected({ guard }: { guard: boolean; children?: React.ReactNode }) {
     return <Text>{`guard:${guard}`}</Text>;
   };
-  return { Stack };
+  // Headers take their colours from the theme of this provider, not React Navigation's own one.
+  function ThemeProvider({
+    value,
+    children,
+  }: {
+    value: { name: string };
+    children?: React.ReactNode;
+  }) {
+    return (
+      <>
+        <Text>{`router-theme:${value.name}`}</Text>
+        {children}
+      </>
+    );
+  }
+  return {
+    Stack,
+    ThemeProvider,
+    DarkTheme: { name: 'dark' },
+    DefaultTheme: { name: 'light' },
+  };
 });
+let mockScheme: 'light' | 'dark' = 'light';
+jest.mock('@/hooks/use-color-scheme', () => ({ useColorScheme: () => mockScheme }));
 jest.mock('@/components/prices/price-auto-refresh', () => ({ PriceAutoRefresh: () => null }));
 jest.mock('@/components/layout/splash-overlay', () => ({
   AnimatedSplashOverlay: () => {
@@ -98,3 +120,13 @@ test('nothing is drawn while the saved session is still being read', async () =>
   release(null);
   expect(await screen.findByText('router-stack')).toBeTruthy();
 });
+
+test.each(['light', 'dark'] as const)(
+  'in %s mode the router, which draws the screen headers, gets the matching theme',
+  async (scheme) => {
+    mockScheme = scheme;
+    mockReady = true;
+    await render(<RootLayout />);
+    expect(screen.getByText(`router-theme:${scheme}`)).toBeTruthy();
+  },
+);
