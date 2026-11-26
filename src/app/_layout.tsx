@@ -1,12 +1,13 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
-import { Stack } from 'expo-router';
+// The theme must come from expo-router: it carries its own copy of React Navigation, so a provider
+// imported from @react-navigation/native never reaches the screen headers.
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import React, { useEffect } from 'react';
-import { useColorScheme } from 'react-native';
 
 import { ErrorFallback } from '@/components/feedback/error-fallback';
 import { PriceAutoRefresh } from '@/components/prices/price-auto-refresh';
 import { AnimatedSplashOverlay } from '@/components/layout/splash-overlay';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { PERSIST_BUSTER, PERSIST_MAX_AGE, queryClient, queryPersister } from '@/lib/query-client';
 import { restoreSession } from '@/lib/session';
 import { useStoresReady } from '@/stores';

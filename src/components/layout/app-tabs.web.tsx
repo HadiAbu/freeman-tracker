@@ -7,12 +7,23 @@ import {
   type TabListProps,
 } from 'expo-router/ui';
 import React from 'react';
-import { Pressable, type PressableProps, View, StyleSheet } from 'react-native';
+import {
+  Pressable,
+  type PressableProps,
+  View,
+  StyleSheet,
+  useWindowDimensions,
+} from 'react-native';
 
 import { ThemedText } from '@/components/ui/themed-text';
 import { ThemedView } from '@/components/ui/themed-view';
 
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+
+/** Narrower than this, the brand name and four normally spaced tabs do not fit on one line. */
+export const COMPACT_TAB_BAR_WIDTH = 520;
+
+const useCompactTabBar = () => useWindowDimensions().width < COMPACT_TAB_BAR_WIDTH;
 
 export default function AppTabs() {
   return (
@@ -39,11 +50,12 @@ export default function AppTabs() {
 }
 
 export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
+  const compact = useCompactTabBar();
   return (
     <Pressable {...(props as PressableProps)} style={({ pressed }) => pressed && styles.pressed}>
       <ThemedView
         type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
-        style={styles.tabButtonView}
+        style={[styles.tabButtonView, compact && styles.tabButtonCompact]}
       >
         <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
           {children}
@@ -54,12 +66,18 @@ export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps
 }
 
 export function CustomTabList(props: TabListProps) {
+  const compact = useCompactTabBar();
   return (
-    <View {...props} style={styles.tabListContainer}>
-      <ThemedView type="backgroundElement" style={styles.innerContainer}>
-        <ThemedText type="smallBold" style={styles.brandText}>
-          Freeman
-        </ThemedText>
+    <View {...props} style={[styles.tabListContainer, compact && styles.tabListCompact]}>
+      <ThemedView
+        type="backgroundElement"
+        style={[styles.innerContainer, compact && styles.innerCompact]}
+      >
+        {compact ? null : (
+          <ThemedText type="smallBold" style={styles.brandText}>
+            Freeman
+          </ThemedText>
+        )}
 
         {props.children}
       </ThemedView>
@@ -88,6 +106,19 @@ const styles = StyleSheet.create({
   },
   brandText: {
     marginRight: 'auto',
+  },
+  // Compact: share the width evenly between the tabs with little padding, so all four fit
+  // windows as narrow as 320.
+  tabListCompact: {
+    paddingHorizontal: Spacing.two,
+  },
+  innerCompact: {
+    paddingHorizontal: Spacing.one,
+    justifyContent: 'space-around',
+    gap: 0,
+  },
+  tabButtonCompact: {
+    paddingHorizontal: Spacing.two,
   },
   pressed: {
     opacity: 0.7,
