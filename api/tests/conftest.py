@@ -6,6 +6,9 @@ SECRET = "test-secret-" + "x" * 40
 # .env (and refuse to start on a weak JWT_SECRET there). Environment variables win over the
 # .env file, so pin the test secret first: the suite must not depend on private local config.
 os.environ["JWT_SECRET"] = SECRET
+# A developer's real mail settings must never make the test suite start the alert checker.
+os.environ["SMTP_USER"] = ""
+os.environ["SMTP_PASSWORD"] = ""
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402

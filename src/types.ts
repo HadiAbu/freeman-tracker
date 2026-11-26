@@ -75,26 +75,37 @@ export type HoldingMeta = {
   asset_class?: string | null;
 };
 
+/** 'triggered' means the price is past the limit and no more emails come until it crosses back. */
+export type LimitState = 'armed' | 'triggered';
+
 export type WatchItem = {
   id: number;
   ticker: string;
   name: string | null;
-  target_price: number | null;
+  /** Email me when the price reaches this (at or above). */
+  upper_limit: number | null;
+  /** Email me when the price falls to this (at or below). */
+  lower_limit: number | null;
+  upper_state: LimitState;
+  lower_state: LimitState;
   note: string | null;
   /** Latest price mark, if any. */
   price: number | null;
   price_as_of: string | null;
   price_kind: PriceKind | null;
-  /** (target - price) / price * 100; null without both a target and a price. */
+  /** (upper limit - price) / price * 100; null without both an upper limit and a price. */
   pct_to_target: number | null;
 };
 
 export type NewWatch = {
   ticker: string;
   name?: string | null;
-  target_price?: number | null;
+  upper_limit?: number | null;
+  lower_limit?: number | null;
   note?: string | null;
 };
+
+export type AlertSettings = { email: string | null; email_configured: boolean };
 
 export type NewPrice = { ticker: string; price: number; as_of: string };
 

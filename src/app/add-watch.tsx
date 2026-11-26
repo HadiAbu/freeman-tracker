@@ -6,11 +6,15 @@ import { Button } from '@/components/ui/button';
 import { TextField } from '@/components/ui/text-field';
 import { ThemedText } from '@/components/ui/themed-text';
 import { useAddWatch } from '@/hooks/use-watchlist';
+import { MAX_AMOUNT, TOO_LARGE_MESSAGE } from '@/lib/amount';
 import { haptic } from '@/lib/haptics';
 
-type Errors = Partial<Record<'ticker' | 'target', string>>;
+type Errors = Partial<Record<'ticker' | 'upper' | 'lower', string>>;
 
 const num = (s: string) => Number(s.trim().replace(',', '.'));
+const blank = (s: string) => s.trim() === '';
+// Number() also reads "Infinity", which is not a price.
+const isPrice = (n: number) => Number.isFinite(n) && n > 0;
 
 export default function AddWatchScreen() {
   const router = useRouter();
@@ -19,14 +23,21 @@ export default function AddWatchScreen() {
 
   const [ticker, setTicker] = useState('');
   const [name, setName] = useState('');
-  const [target, setTarget] = useState('');
+  const [upper, setUpper] = useState('');
+  const [lower, setLower] = useState('');
   const [note, setNote] = useState('');
   const [errors, setErrors] = useState<Errors>({});
 
   function submit() {
     const e: Errors = {};
     if (!/^[A-Za-z0-9.\-]{1,15}$/.test(ticker.trim())) e.ticker = 'Enter a ticker, e.g. NVDA';
-    if (target.trim() !== '' && !(num(target) >= 0)) e.target = 'Target must be 0 or more';
+    if (!blank(upper) && !isPrice(num(upper))) e.upper = 'Enter a price above 0';
+    else if (num(upper) > MAX_AMOUNT) e.upper = TOO_LARGE_MESSAGE;
+    if (!blank(lower) && !isPrice(num(lower))) e.lower = 'Enter a price above 0';
+    else if (num(lower) > MAX_AMOUNT) e.lower = TOO_LARGE_MESSAGE;
+    if (!e.upper && !e.lower && !blank(upper) && !blank(lower) && num(lower) >= num(upper)) {
+      e.lower = 'Must be below the upper limit';
+    }
     setErrors(e);
     if (Object.keys(e).length > 0) {
       haptic('warning');
@@ -36,7 +47,8 @@ export default function AddWatchScreen() {
       {
         ticker: ticker.trim().toUpperCase(),
         name: name.trim() || null,
-        target_price: target.trim() === '' ? null : num(target),
+        upper_limit: blank(upper) ? null : num(upper),
+        lower_limit: blank(lower) ? null : num(lower),
         note: note.trim() || null,
       },
       {
@@ -62,13 +74,25 @@ export default function AddWatchScreen() {
       />
       <TextField label="Name (optional)" value={name} onChangeText={setName} placeholder="NVIDIA" />
       <TextField
-        label="Target price (optional)"
-        error={errors.target}
-        value={target}
-        onChangeText={setTarget}
+        label="Alert above (optional)"
+        error={errors.upper}
+        value={upper}
+        onChangeText={setUpper}
         placeholder="500"
         keyboardType="decimal-pad"
       />
+      <TextField
+        label="Alert below (optional)"
+        error={errors.lower}
+        value={lower}
+        onChangeText={setLower}
+        placeholder="350"
+        keyboardType="decimal-pad"
+      />
+      <ThemedText type="small" themeColor="textSecondary">
+        You get an email when the price reaches either limit. Set where to send it under Email
+        alerts on the Watchlist.
+      </ThemedText>
       <TextField
         label="Note (optional)"
         value={note}
@@ -76,7 +100,7 @@ export default function AddWatchScreen() {
         placeholder="Why are you watching it?"
       />
       <ThemedText type="small" themeColor="textSecondary">
-        Adding a ticker that is already on the list updates its target and note.
+        Adding a ticker that is already on the list updates its limits and note.
       </ThemedText>
 
       {add.isError ? (

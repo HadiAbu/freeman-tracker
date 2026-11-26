@@ -15,17 +15,36 @@ type Props = {
   onResearch?: (item: WatchItem) => void;
 };
 
-/** What the target means right now, in words as well as color. */
-function targetStatus(item: WatchItem): { text: string; color?: 'gain' } {
-  const { price, target_price: target, pct_to_target: pct } = item;
-  if (target === null) return { text: 'No target set' };
-  if (price === null) return { text: `Target ${formatCurrency(target)} · log a price to compare` };
-  if (price >= target) return { text: `Target ${formatCurrency(target)} reached`, color: 'gain' };
-  return { text: `Target ${formatCurrency(target)} · ${formatPercent(pct ?? 0)} to go` };
+const PAUSED = 'paused until the price crosses back';
+
+/** One line about the upper limit, in words (never color alone), or null when there is none. */
+function upperLine(item: WatchItem): string | null {
+  const { upper_limit: limit, upper_state: state, price, pct_to_target: pct } = item;
+  if (limit === null) return null;
+  const head = `Alert above ${formatCurrency(limit)}`;
+  if (state === 'triggered') return `${head} · ${PAUSED}`;
+  if (price === null) return `${head} · log a price to compare`;
+  if (price >= limit) return `${head} · reached`;
+  return `${head} · ${formatPercent(pct ?? 0)} to go`;
+}
+
+/** The same for the lower limit; how far the price could fall before it is reached. */
+function lowerLine(item: WatchItem): string | null {
+  const { lower_limit: limit, lower_state: state, price } = item;
+  if (limit === null) return null;
+  const head = `Alert below ${formatCurrency(limit)}`;
+  if (state === 'triggered') return `${head} · ${PAUSED}`;
+  if (price === null) return `${head} · log a price to compare`;
+  if (price <= limit) return `${head} · reached`;
+  return `${head} · ${formatPercent(-((price - limit) / price) * 100)} to go`;
+}
+
+function limitLines(item: WatchItem): string[] {
+  const lines = [upperLine(item), lowerLine(item)].filter((l): l is string => l !== null);
+  return lines.length > 0 ? lines : ['No alerts set'];
 }
 
 export function WatchRow({ item, onPress, onLongPress, onResearch }: Props) {
-  const status = targetStatus(item);
   return (
     <ThemedView type="backgroundElement" style={styles.card}>
       <Pressable
@@ -42,10 +61,11 @@ export function WatchRow({ item, onPress, onLongPress, onResearch }: Props) {
                 {item.name}
               </ThemedText>
             ) : null}
-            <ThemedText type="small" themeColor={status.color ?? 'textSecondary'}>
-              {status.color ? '✓ ' : ''}
-              {status.text}
-            </ThemedText>
+            {limitLines(item).map((line) => (
+              <ThemedText key={line} type="small" themeColor="textSecondary">
+                {line}
+              </ThemedText>
+            ))}
             {item.note ? (
               <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
                 {item.note}

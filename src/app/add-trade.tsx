@@ -9,6 +9,7 @@ import { ThemedView } from '@/components/ui/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useCreateTradeWithClassification } from '@/hooks/use-trades';
 import { useTheme } from '@/hooks/use-theme';
+import { MAX_AMOUNT, TOO_LARGE_MESSAGE } from '@/lib/amount';
 import { enteredClassification } from '@/lib/classification';
 import { haptic } from '@/lib/haptics';
 import { isISODate, todayISO } from '@/lib/format';
@@ -43,9 +44,14 @@ export default function AddTradeScreen() {
   function validate(): Errors {
     const e: Errors = {};
     if (!/^[A-Za-z0-9.\-]{1,15}$/.test(ticker.trim())) e.ticker = 'Enter a ticker, e.g. AAPL';
-    if (!(num(shares) > 0)) e.shares = 'Shares must be greater than 0';
-    if (price.trim() === '' || !(num(price) >= 0)) e.price = 'Enter a price (0 or more)';
-    if (fee.trim() !== '' && !(num(fee) >= 0)) e.fee = 'Fee must be 0 or more';
+    // Number() also reads "Infinity", which is not an amount.
+    const atLeastZero = (n: number) => Number.isFinite(n) && n >= 0;
+    if (!(atLeastZero(num(shares)) && num(shares) > 0)) e.shares = 'Shares must be greater than 0';
+    else if (num(shares) > MAX_AMOUNT) e.shares = TOO_LARGE_MESSAGE;
+    if (price.trim() === '' || !atLeastZero(num(price))) e.price = 'Enter a price (0 or more)';
+    else if (num(price) > MAX_AMOUNT) e.price = TOO_LARGE_MESSAGE;
+    if (fee.trim() !== '' && !atLeastZero(num(fee))) e.fee = 'Fee must be 0 or more';
+    else if (num(fee) > MAX_AMOUNT) e.fee = TOO_LARGE_MESSAGE;
     if (!isISODate(date.trim())) e.date = 'Use the format YYYY-MM-DD';
     return e;
   }

@@ -26,6 +26,7 @@ class Quote:
     ticker: str
     price: float
     as_of: date  # the day of the last trade, so a weekend refresh reports Friday
+    previous_close: float | None = None  # yesterday's close; None when the provider sent none
 
 
 class QuoteProvider(Protocol):
@@ -79,7 +80,13 @@ class FinnhubQuotes:
         if isinstance(price, bool) or not isinstance(price, (int, float)) or not math.isfinite(price) or price <= 0:
             raise QuoteError("no quote for this symbol")
         today = datetime.now(timezone.utc).date()
-        return Quote(ticker, float(price), _trade_day(data.get("t"), today))
+        pc = data.get("pc")
+        previous = (
+            float(pc)
+            if isinstance(pc, (int, float)) and not isinstance(pc, bool) and math.isfinite(pc) and pc > 0
+            else None
+        )
+        return Quote(ticker, float(price), _trade_day(data.get("t"), today), previous)
 
 
 class QuoteCache:
@@ -92,10 +99,12 @@ class QuoteCache:
         self._items: dict[str, tuple[float, Quote]] = {}
         self._lock = threading.Lock()
 
-    def get(self, ticker: str) -> Quote | None:
+    def get(self, ticker: str, max_age: float | None = None) -> Quote | None:
+        """The cached quote, if younger than the ttl (and than `max_age`, when given)."""
+        limit = self.ttl if max_age is None else min(self.ttl, max_age)
         with self._lock:
             hit = self._items.get(ticker)
-            if hit and self._clock() - hit[0] < self.ttl:
+            if hit and self._clock() - hit[0] < limit:
                 return hit[1]
             return None
 

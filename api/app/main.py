@@ -1,18 +1,24 @@
+import logging
+import math
 import threading
 from contextlib import asynccontextmanager
 from dataclasses import asdict
 from datetime import date
 from typing import Literal
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.alert_loop import start_alert_loop
+from app.alert_routes import router as alert_router
 from app.analysis.routes import router as analysis_router
 from app.auth import current_user_id
 from app.auth_routes import router as auth_router
 from app.market_routes import router as market_router
 from app.config import get_settings
-from app.db import get_conn, init_schema, one, rows
+from app.db import connect, get_conn, init_schema, one, rows
 from app.models import HoldingMeta, PriceIn, TradeIn, TradePatch, WatchIn, WatchPatch
 from app.portfolio import (
     OversellError,
@@ -22,11 +28,14 @@ from app.portfolio import (
     first_trade_order,
     value_history,
 )
+from app.alerts import ARMED, TRIGGERED, initial_state
 from app.ledger import (
     PRICE_VISIBLE,
     all_trades as _all_trades,
+    latest_market_price as _latest_market_price,
     latest_marks as _latest_marks,
     price_kind as _price_kind,
+    latest_price as _latest_price,
     latest_prices as _latest_prices,
     meta as _meta,
     positions as _positions,
@@ -43,7 +52,19 @@ async def lifespan(_app: FastAPI):
         init_schema(conn)
     finally:
         gen.close()
+
+    # The price alert checker lives as long as the server. It starts only when market data and
+    # email are configured (see start_alert_loop). A failure to start it must not stop the API.
+    stop = threading.Event()
+    try:
+        settings = _app.dependency_overrides.get(get_settings, get_settings)()
+        start_alert_loop(
+            settings, lambda: connect(settings.turso_database_url, settings.turso_auth_token), stop
+        )
+    except Exception:
+        logging.getLogger("freeman.alerts").exception("price alerts could not start")
     yield
+    stop.set()
 
 
 app = FastAPI(title="Freeman API", version="0.1.0", lifespan=lifespan)
@@ -57,6 +78,26 @@ if _origins:
 app.include_router(auth_router)
 app.include_router(analysis_router)
 app.include_router(market_router)
+app.include_router(alert_router)
+
+
+def _json_safe(value):
+    if isinstance(value, float) and not math.isfinite(value):
+        return str(value)
+    if isinstance(value, dict):
+        return {k: _json_safe(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(v) for v in value]
+    return value
+
+
+@app.exception_handler(RequestValidationError)
+async def invalid_request(request: Request, exc: RequestValidationError):
+    """FastAPI's usual 422, except that an infinite or NaN number it echoes back is sent as text:
+    JSON has no way to write one, so the error reply itself would fail with a 500."""
+    return await request_validation_exception_handler(
+        request, RequestValidationError(_json_safe(exc.errors()))
+    )
 
 
 @app.get("/health")
@@ -164,13 +205,48 @@ def delete_trade(trade_id: int, uid: int = Depends(current_user_id), conn=Depend
 
 
 # ---------- watchlist ----------
+def _check_limits(upper: float | None, lower: float | None) -> None:
+    if upper is not None and lower is not None and lower >= upper:
+        raise HTTPException(422, "The lower limit must be below the upper limit.")
+
+
+def _new_limit_states(conn, uid: int, ticker: str, limits: dict[str, float | None]) -> dict:
+    """The state a new or changed limit starts in, for each side in `limits`.
+
+    It starts 'triggered' if either the price the user sees or the newest market mark is past it
+    (see alerts.initial_state). The checker compares market prices, so a same-day manual mark must
+    not hide that the market is already past the limit: that would email within minutes.
+    """
+    prices = (_latest_price(conn, uid, ticker), _latest_market_price(conn, ticker))
+    states = {}
+    for side, limit in limits.items():
+        reached = any(initial_state(side, p, limit) == TRIGGERED for p in prices)
+        states[f"{side}_state"] = TRIGGERED if reached else ARMED
+    return states
+
+
 @app.post("/watchlist", status_code=201)
 def add_watch(body: WatchIn, uid: int = Depends(current_user_id), conn=Depends(get_conn)):
+    _check_limits(body.upper_limit, body.lower_limit)
+    st = _new_limit_states(
+        conn, uid, body.ticker, {"upper": body.upper_limit, "lower": body.lower_limit}
+    )
+    # An unchanged limit keeps its stored state. That is decided inside the statement: a state read
+    # earlier could overwrite a 'triggered' the checker committed since, and email a second time.
     conn.execute(
-        "INSERT INTO watchlist (user_id, ticker, name, target_price, note) VALUES (?, ?, ?, ?, ?)"
-        " ON CONFLICT (user_id, ticker) DO UPDATE SET"
-        " name = excluded.name, target_price = excluded.target_price, note = excluded.note",
-        (uid, body.ticker, body.name, body.target_price, body.note),
+        "INSERT INTO watchlist (user_id, ticker, name, upper_limit, lower_limit, upper_state,"
+        " lower_state, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+        " ON CONFLICT (user_id, ticker) DO UPDATE SET name = excluded.name,"
+        " upper_limit = excluded.upper_limit, lower_limit = excluded.lower_limit,"
+        " upper_state = CASE WHEN watchlist.upper_limit IS excluded.upper_limit"
+        " THEN watchlist.upper_state ELSE excluded.upper_state END,"
+        " lower_state = CASE WHEN watchlist.lower_limit IS excluded.lower_limit"
+        " THEN watchlist.lower_state ELSE excluded.lower_state END,"
+        " note = excluded.note",
+        (
+            uid, body.ticker, body.name, body.upper_limit, body.lower_limit,
+            st["upper_state"], st["lower_state"], body.note,
+        ),
     )
     conn.commit()
     return one(
@@ -187,10 +263,11 @@ def list_watch(uid: int = Depends(current_user_id), conn=Depends(get_conn)):
         w["price"] = mark["price"] if mark else None
         w["price_as_of"] = mark["as_of"] if mark else None
         w["price_kind"] = _price_kind(mark["source"]) if mark else None
-        t = w["target_price"]
-        w["pct_to_target"] = (
-            (t - w["price"]) / w["price"] * 100 if t is not None and w["price"] else None
-        )
+        t = w["upper_limit"]
+        pct = (t - w["price"]) / w["price"] * 100 if t is not None and w["price"] else None
+        # A price close to zero (or a huge limit stored before MAX_AMOUNT) overflows to infinity,
+        # which cannot be written as JSON: one such row would break the whole list.
+        w["pct_to_target"] = pct if pct is not None and math.isfinite(pct) else None
     return items
 
 
@@ -198,13 +275,25 @@ def list_watch(uid: int = Depends(current_user_id), conn=Depends(get_conn)):
 def patch_watch(
     item_id: int, body: WatchPatch, uid: int = Depends(current_user_id), conn=Depends(get_conn)
 ):
-    if not one(conn.execute("SELECT id FROM watchlist WHERE id = ? AND user_id = ?", (item_id, uid))):
+    old = one(conn.execute("SELECT * FROM watchlist WHERE id = ? AND user_id = ?", (item_id, uid)))
+    if not old:
         raise HTTPException(404, "Watchlist item not found")
     changes = body.model_dump(exclude_unset=True)
+    upper = changes.get("upper_limit", old["upper_limit"])
+    lower = changes.get("lower_limit", old["lower_limit"])
+    _check_limits(upper, lower)
+    # Only a limit that really changed gets a new state. The state of an unchanged one is not
+    # written at all, so a 'triggered' the checker committed since `old` was read survives.
+    changed = {
+        side: new for side, new in (("upper", upper), ("lower", lower)) if new != old[f"{side}_limit"]
+    }
+    if changed:
+        changes.update(_new_limit_states(conn, uid, old["ticker"], changed))
     if changes:
         sets = ", ".join(f"{k} = ?" for k in changes)
         conn.execute(
-            f"UPDATE watchlist SET {sets} WHERE id = ? AND user_id = ?", (*changes.values(), item_id, uid)
+            f"UPDATE watchlist SET {sets} WHERE id = ? AND user_id = ?",
+            (*changes.values(), item_id, uid),
         )
         conn.commit()
     return one(conn.execute("SELECT * FROM watchlist WHERE id = ? AND user_id = ?", (item_id, uid)))

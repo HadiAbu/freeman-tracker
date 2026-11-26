@@ -91,3 +91,11 @@ The backend marks every price as `trade`, `manual` or `market`. `lib/price-label
 words ("Market · Nov 24", "Manual · Nov 20 · stale"); a price is stale after 4 days (a weekend plus a
 holiday). `PriceAutoRefresh` asks the server to refresh market prices when the app opens and when it
 returns to the foreground, at most every five minutes.
+
+## Price alerts
+
+`api/app/alerts.py` holds the rules and `run_check`, which compares fresh quotes with every limit and
+emails through `api/app/mailer.py`. `api/app/alert_loop.py` runs it on a background thread while the
+server is up, every two minutes by default (`ALERT_CHECK_SECONDS`). Each limit is `armed` or `triggered`: it emails once when
+reached, stays quiet while the price is beyond it, and re-arms when the price comes back. The app
+sets limits on the add-watch screen and the destination address under Email alerts.

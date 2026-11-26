@@ -79,15 +79,15 @@ def test_delete_trade(client):
 
 # ---------- watchlist ----------
 def test_watchlist_crud_and_pct_to_target(client):
-    w = client.post("/watchlist", json={"ticker": "nvda", "target_price": 150}).json()
+    w = client.post("/watchlist", json={"ticker": "nvda", "upper_limit": 150}).json()
     assert w["ticker"] == "NVDA"
     client.post("/prices", json={"ticker": "NVDA", "price": 100, "as_of": "2026-01-01"})
     item = client.get("/watchlist").json()[0]
     assert item["price"] == 100 and item["pct_to_target"] == 50
     # re-adding the same ticker upserts instead of duplicating
-    client.post("/watchlist", json={"ticker": "NVDA", "target_price": 200})
+    client.post("/watchlist", json={"ticker": "NVDA", "upper_limit": 200})
     items = client.get("/watchlist").json()
-    assert len(items) == 1 and items[0]["target_price"] == 200
+    assert len(items) == 1 and items[0]["upper_limit"] == 200
     assert client.patch(f"/watchlist/{w['id']}", json={"note": "wait"}).json()["note"] == "wait"
     assert client.delete(f"/watchlist/{w['id']}").status_code == 204
     assert client.get("/watchlist").json() == []

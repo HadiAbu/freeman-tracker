@@ -75,3 +75,14 @@ test('a server error is shown and the form stays open', async () => {
   expect(await screen.findByText('Price out of range')).toBeTruthy();
   expect(mockBack).not.toHaveBeenCalled();
 });
+
+test.each([
+  ['Infinity', 'Price must be greater than 0'],
+  ['1e308', 'That number is too large'],
+])('rejects the price %p', async (bad, message) => {
+  await renderWithClient(<LogPriceScreen />);
+  await fireEvent.changeText(screen.getByLabelText('Price (USD)'), bad);
+  await fireEvent.press(save());
+  expect(screen.getByText(message)).toBeTruthy();
+  expect(addPrice).not.toHaveBeenCalled();
+});

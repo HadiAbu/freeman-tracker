@@ -37,6 +37,10 @@ function Screens({ signedIn }: { signedIn: boolean }) {
           options={{ presentation: 'modal', headerShown: true, title: 'Add to watchlist' }}
         />
         <Stack.Screen
+          name="alert-settings"
+          options={{ presentation: 'modal', headerShown: true, title: 'Email alerts' }}
+        />
+        <Stack.Screen
           name="log-price"
           options={{ presentation: 'modal', headerShown: true, title: 'Log price' }}
         />

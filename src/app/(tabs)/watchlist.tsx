@@ -43,6 +43,14 @@ export default function WatchlistScreen() {
         <Button title="Add ticker" onPress={() => router.push('/add-watch')} />
       </View>
 
+      <View style={styles.alertsRow}>
+        <Button
+          title="Email alerts"
+          variant="secondary"
+          onPress={() => router.push('/alert-settings')}
+        />
+      </View>
+
       <View style={styles.priceNote}>
         <PriceUpdated />
       </View>
@@ -110,6 +118,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: Spacing.three,
   },
+  alertsRow: { paddingBottom: Spacing.two, alignItems: 'flex-start' },
   priceNote: { paddingHorizontal: Spacing.three },
   researchBox: { paddingBottom: Spacing.three },
   banner: { paddingBottom: Spacing.three },

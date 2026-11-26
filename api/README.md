@@ -42,12 +42,47 @@ server from starting (the error says how long it was, never what it was).
 existing price marks are assigned to id 1 on startup. The first account you create gets id 1 and so
 inherits everything. Create it before enabling registration.
 
+## Price alerts
+
+Each watchlist item can have an upper and a lower limit. While the server is running it checks every
+`ALERT_CHECK_SECONDS` (120) and emails the address saved under Email alerts in the app when a price
+reaches a limit. It emails once, re-arms when the price is back between the limits, and sends at most
+one email per item per hour (`ALERT_COOLDOWN_SECONDS`, 3600). Alerts only fire while the server is
+running and can reach Finnhub and your mail server. Needs `FINNHUB_API_KEY`, `SMTP_USER` and
+`SMTP_PASSWORD` (see `.env.example`). `ALERT_CHECK_SECONDS` must be at least 10 and
+`ALERT_COOLDOWN_SECONDS` at least 60; the server refuses to start with a smaller value.
+
+What to expect:
+
+- A limit that the latest known price has already passed starts paused. It emails only after the
+  price comes back and reaches the limit again.
+- Signing out of the app does not stop alerts. They run on the server until you clear the alert email
+  address or remove the limits.
+- At most 50 distinct tickers with limits are checked per cycle, counted across all accounts. Any
+  beyond that are not checked; the server only logs how many were left out.
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET/PUT /alerts/settings` | Read or set the alert email address |
+| `POST /alerts/test` | Send a test email to the saved address |
+
+Operating notes:
+
+- Run exactly one server process. Every uvicorn worker (`--workers N`) starts its own alert checker,
+  so alerts would be emailed more than once. (`--reload` is fine: only the worker process runs the
+  checker.)
+- `POST /alerts/test` has no rate limit and the alert address is not verified. That is acceptable only
+  because registration is off by default (`ALLOW_REGISTRATION=false`) and accounts are created by the
+  owner. Do not turn registration on without first adding a per-user cooldown on the test email and
+  verifying alert addresses, or anyone could use the server's mail account to send mail to arbitrary
+  addresses.
+
 ## Endpoints (all but `/health` and `/auth/*` need a bearer token)
 
 | | |
 |---|---|
 | `POST/GET /trades`, `PATCH/DELETE /trades/{id}` | Buys and sells. Changes that would oversell return 409. |
-| `POST/GET /watchlist`, `PATCH/DELETE /watchlist/{id}` | Watchlist with target price; GET adds latest price and `pct_to_target`. |
+| `POST/GET /watchlist`, `PATCH/DELETE /watchlist/{id}` | Watchlist with optional upper and lower alert limits; GET adds the latest price and `pct_to_target` (distance to the upper limit). |
 | `POST /prices`, `GET /prices`, `GET /prices/{ticker}` | Manual price marks (latest per ticker / history). A manual mark is private to its owner. |
 | `POST /prices/refresh` | Fetches current market prices (Finnhub) for your open positions and watchlist and stores them as shared `market` marks, one per ticker per day. Needs `FINNHUB_API_KEY` (else 503). A provider failure is not an error: failed tickers are listed in `failed` and keep their last price. Quotes are cached for 120 s across all users. |
 | `PUT /holdings/{ticker}` | Name, sector, asset class (for allocation pies). |

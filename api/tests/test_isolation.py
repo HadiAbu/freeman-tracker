@@ -40,10 +40,10 @@ def test_each_user_can_hold_the_same_ticker_independently(alice, bob):
 
 
 def test_watchlist_is_private_and_same_ticker_does_not_collide(alice, bob):
-    item = alice.post("/watchlist", json={"ticker": "NVDA", "target_price": 500}).json()
+    item = alice.post("/watchlist", json={"ticker": "NVDA", "upper_limit": 500}).json()
     assert bob.get("/watchlist").json() == []
-    bob.post("/watchlist", json={"ticker": "NVDA", "target_price": 1})  # not an upsert of Alice's row
-    assert alice.get("/watchlist").json()[0]["target_price"] == 500
+    bob.post("/watchlist", json={"ticker": "NVDA", "upper_limit": 1})  # not an upsert of Alice's row
+    assert alice.get("/watchlist").json()[0]["upper_limit"] == 500
     assert bob.patch(f"/watchlist/{item['id']}", json={"note": "hi"}).status_code == 404
     assert bob.delete(f"/watchlist/{item['id']}").status_code == 404
     assert len(alice.get("/watchlist").json()) == 1

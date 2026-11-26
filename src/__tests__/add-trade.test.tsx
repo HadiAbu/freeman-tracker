@@ -132,3 +132,19 @@ test('the classification is still saved when the screen unmounts mid-request', a
   await act(async () => release({ id: 1 }));
   await waitFor(() => expect(patchHolding).toHaveBeenCalledWith('NVDA', { sector: 'Technology' }));
 });
+
+test.each([
+  ['Shares', 'Infinity', 'Shares must be greater than 0'],
+  ['Shares', '1e308', 'That number is too large'],
+  ['Price per share (USD)', 'Infinity', 'Enter a price (0 or more)'],
+  ['Price per share (USD)', '1e308', 'That number is too large'],
+  ['Fee (optional)', 'Infinity', 'Fee must be 0 or more'],
+  ['Fee (optional)', '1e308', 'That number is too large'],
+])('rejects %p = %p without a request', async (label, bad, message) => {
+  await renderScreen();
+  await fillTrade();
+  await fireEvent.changeText(screen.getByLabelText(label), bad);
+  await fireEvent.press(save());
+  expect(screen.getByText(message)).toBeTruthy();
+  expect(createTrade).not.toHaveBeenCalled();
+});

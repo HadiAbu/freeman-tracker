@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # HS256 wants a key at least as long as its 256-bit hash (RFC 7518, section 3.2). A shorter secret
@@ -33,6 +33,14 @@ class Settings(BaseSettings):
     quote_timeout_seconds: float = 5.0
     # Comma-separated origins for the web build; native apps ignore CORS.
     cors_origins: str = ""
+    # --- email alerts (Gmail by default: use an app password, never the account password) ---
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""  # defaults to smtp_user
+    alert_check_seconds: int = Field(default=120, ge=10)  # 0 or less would busy-loop
+    alert_cooldown_seconds: int = Field(default=3600, ge=60)
     # --- news analysis (all keys server-side only) ---
     openai_api_key: str = ""
     openai_model: str = ""  # no default: the user chooses the model in .env
@@ -42,6 +50,14 @@ class Settings(BaseSettings):
     analysis_daily_cap: int = 30
     news_timeout_seconds: float = 10.0
     llm_timeout_seconds: float = 45.0
+
+    @property
+    def email_configured(self) -> bool:
+        return bool(self.smtp_user and self.smtp_password)
+
+    @property
+    def email_sender(self) -> str:
+        return self.smtp_from or self.smtp_user
 
     @field_validator("jwt_secret")
     @classmethod

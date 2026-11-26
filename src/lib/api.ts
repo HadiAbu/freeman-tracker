@@ -1,4 +1,5 @@
 import type {
+  AlertSettings,
   AllocationBy,
   Analysis,
   AnalysisRequest,
@@ -145,10 +146,15 @@ export const api = {
   history: () => request<HistoryPoint[]>('/portfolio/history'),
   priceHistory: (ticker: string) => request<PricePoint[]>(`/prices/${encodeURIComponent(ticker)}`),
   listWatchlist: () => request<WatchItem[]>('/watchlist'),
-  // POST upserts by ticker, so adding an existing ticker updates its target and note.
+  // POST upserts by ticker, so adding an existing ticker updates its limits and note.
   addWatch: (item: NewWatch) =>
     request<WatchItem>('/watchlist', { method: 'POST', body: JSON.stringify(item) }),
   deleteWatch: (id: number) => request<void>(`/watchlist/${id}`, { method: 'DELETE' }),
+  getAlertSettings: () => request<AlertSettings>('/alerts/settings'),
+  // null clears the address, which turns alerts off for this account.
+  saveAlertSettings: (email: string | null) =>
+    request<AlertSettings>('/alerts/settings', { method: 'PUT', body: JSON.stringify({ email }) }),
+  sendTestAlert: () => request<{ sent_to: string }>('/alerts/test', { method: 'POST' }),
   // The server stops asking the provider after 20 s, so allow a little longer than that.
   refreshPrices: () => request<PriceRefreshResult>('/prices/refresh', { method: 'POST' }, 30_000),
   addPrice: (p: NewPrice) =>
