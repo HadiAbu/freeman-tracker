@@ -25,16 +25,28 @@ const latestAnalysis = api.latestAnalysis as jest.Mock;
 const portfolioSummary = api.portfolioSummary as jest.Mock;
 
 const make = (over: Partial<Analysis>): Analysis => ({
-  ticker: 'AAPL', generated_at: '2026-11-17T10:00:00Z', cached: false, personalized: true,
-  stance: 'hold', confidence: 'medium', summary: 'Stored summary.',
-  case_for: [], case_against: [], watch_for: [], sources: [], notes: [], model: 'm',
+  ticker: 'AAPL',
+  generated_at: '2026-11-17T10:00:00Z',
+  cached: false,
+  personalized: true,
+  stance: 'hold',
+  confidence: 'medium',
+  summary: 'Stored summary.',
+  case_for: [],
+  case_against: [],
+  watch_for: [],
+  sources: [],
+  notes: [],
+  model: 'm',
   ...over,
 });
 
 const clients: QueryClient[] = [];
 let client: QueryClient;
 async function renderScreen() {
-  client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false, gcTime: Infinity } } });
+  client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false, gcTime: Infinity } },
+  });
   clients.push(client);
   return render(
     <QueryClientProvider client={client}>
@@ -106,12 +118,16 @@ test('a failed toggle reverts the switch and keeps the previous analysis', async
   try {
     held();
     latestAnalysis.mockResolvedValue(make({ personalized: true }));
-    analyze.mockRejectedValue(new ApiError(429, 'The daily limit for new analyses has been reached.'));
+    analyze.mockRejectedValue(
+      new ApiError(429, 'The daily limit for new analyses has been reached.'),
+    );
     await renderScreen();
     await screen.findByText('Stored summary.');
     await waitFor(() => expect(toggle()).toBeTruthy());
     await fireEvent(toggle(), 'valueChange', false);
-    expect(await screen.findByText('The daily limit for new analyses has been reached.')).toBeTruthy();
+    expect(
+      await screen.findByText('The daily limit for new analyses has been reached.'),
+    ).toBeTruthy();
     await waitFor(() => expect(toggle().props.value).toBe(true));
     expect(screen.getByText('Stored summary.')).toBeTruthy();
   } finally {
@@ -123,7 +139,11 @@ test('a refetch of the stored analysis does not replace a run result (thin-news 
   held();
   latestAnalysis.mockResolvedValueOnce(make({ summary: 'Old stored.' }));
   analyze.mockResolvedValue(
-    make({ stance: 'unclear', confidence: 'low', summary: 'Not enough recent news to form a view.' }),
+    make({
+      stance: 'unclear',
+      confidence: 'low',
+      summary: 'Not enough recent news to form a view.',
+    }),
   );
   await renderScreen();
   await screen.findByText('Old stored.');

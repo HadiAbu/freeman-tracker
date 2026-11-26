@@ -1,25 +1,31 @@
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
-import { Button } from '@/components/button';
+import { Button } from '@/components/ui/button';
 import { AllocationDonut } from '@/components/charts/allocation-donut';
 import { ChartCard, ChartNote } from '@/components/charts/chart-card';
 import { TrendLine } from '@/components/charts/trend-line';
-import { ChipRow } from '@/components/chip-row';
-import { ErrorBanner } from '@/components/error-banner';
-import { Screen } from '@/components/screen';
-import { ErrorState, LoadingState } from '@/components/screen-state';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { TradeRow } from '@/components/trade-row';
+import { ChipRow } from '@/components/ui/chip-row';
+import { ErrorBanner } from '@/components/feedback/error-banner';
+import { AccountButton } from '@/components/layout/account-button';
+import { PriceUpdated } from '@/components/prices/price-updated';
+import { PrivacyToggle } from '@/components/ui/privacy-toggle';
+import { Screen } from '@/components/layout/screen';
+import { ErrorState, LoadingState } from '@/components/feedback/screen-state';
+import { ThemedText } from '@/components/ui/themed-text';
+import { ThemedView } from '@/components/ui/themed-view';
+import { TradeRow } from '@/components/rows/trade-row';
 import { useChartTheme } from '@/constants/chart-theme';
 import { BottomTabInset, Spacing } from '@/constants/theme';
+import { useRefreshPrices } from '@/hooks/use-market-prices';
+import { useMoney } from '@/hooks/use-money';
 import { useAllocation, usePortfolioHistory } from '@/hooks/use-portfolio';
 import { usePortfolioSummary, useRecentTrades } from '@/hooks/use-trades';
 import { isAllUnassigned } from '@/lib/classification';
 import { buildSlices } from '@/lib/entity-colors';
-import { formatCurrency, formatPercent, formatSignedCurrency } from '@/lib/format';
+import { formatPercent } from '@/lib/format';
+import { usePreferences } from '@/stores/preferences';
 import type { AllocationBy } from '@/types';
 
 const DIMENSIONS: { label: string; value: AllocationBy }[] = [
@@ -31,21 +37,42 @@ const DIMENSIONS: { label: string; value: AllocationBy }[] = [
 export default function DashboardScreen() {
   const router = useRouter();
   const chart = useChartTheme();
-  const [by, setBy] = useState<AllocationBy>('ticker');
+  const money = useMoney();
+  // remembered between launches
+  const by = usePreferences((s) => s.allocationBy);
+  const setBy = usePreferences((s) => s.setAllocationBy);
 
+  const { mutateAsync: refreshPrices, isPending: refreshingPrices } = useRefreshPrices();
   const summary = usePortfolioSummary();
   const trades = useRecentTrades(5);
   const history = usePortfolioHistory();
   const allocation = useAllocation(by);
 
-  const refreshing = summary.isRefetching || trades.isRefetching || history.isRefetching;
+  const refreshing =
+    refreshingPrices || summary.isRefetching || trades.isRefetching || history.isRefetching;
   const refresh = async () => {
-    await Promise.all([summary.refetch(), trades.refetch(), history.refetch(), allocation.refetch()]);
+    // New prices first, so the reloads below show them. A failed refresh keeps the old prices.
+    await refreshPrices().catch(() => undefined);
+    await Promise.all([
+      summary.refetch(),
+      trades.refetch(),
+      history.refetch(),
+      allocation.refetch(),
+    ]);
   };
 
-  if (summary.isPending) return <Screen><LoadingState /></Screen>;
+  if (summary.isPending)
+    return (
+      <Screen>
+        <LoadingState />
+      </Screen>
+    );
   if (summary.isError) {
-    return <Screen><ErrorState error={summary.error} onRetry={() => summary.refetch()} /></Screen>;
+    return (
+      <Screen>
+        <ErrorState error={summary.error} onRetry={() => summary.refetch()} />
+      </Screen>
+    );
   }
 
   const s = summary.data;
@@ -60,21 +87,29 @@ export default function DashboardScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}>
-        <ThemedText type="subtitle">Dashboard</ThemedText>
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
+      >
+        <View style={styles.titleRow}>
+          <ThemedText type="subtitle">Dashboard</ThemedText>
+          <View style={styles.actions}>
+            <PrivacyToggle />
+            <AccountButton />
+          </View>
+        </View>
+        <PriceUpdated />
 
         <ThemedView type="backgroundElement" style={styles.card}>
           <ThemedText type="small" themeColor="textSecondary">
             Portfolio value
           </ThemedText>
           <ThemedText type="title" style={styles.value}>
-            {formatCurrency(s.total_value)}
+            {money.currency(s.total_value)}
           </ThemedText>
           <ThemedText type="smallBold" themeColor={pnlColor}>
-            {formatSignedCurrency(s.unrealized_pnl)} ({formatPercent(s.unrealized_pct)}) unrealized
+            {money.signedCurrency(s.unrealized_pnl)} ({formatPercent(s.unrealized_pct)}) unrealized
           </ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            Cost {formatCurrency(s.total_cost)} · Realized {formatSignedCurrency(s.realized_pnl)}
+            Cost {money.currency(s.total_cost)} · Realized {money.signedCurrency(s.realized_pnl)}
           </ThemedText>
         </ThemedView>
 
@@ -88,6 +123,7 @@ export default function DashboardScreen() {
               points={history.data.map((p) => ({ date: p.date, value: p.value }))}
               secondary={history.data.map((p) => p.cost)}
               primaryName="Value"
+              sensitive
               secondaryName="Cost basis"
               emptyHint="The line appears once you have activity on two different dates."
             />
@@ -103,11 +139,16 @@ export default function DashboardScreen() {
         <ChartCard
           title="Allocation"
           subtitle={DIMENSIONS.find((d) => d.value === by)?.label}
-          summary={slices.map((x) => `${x.label} ${x.percent.toFixed(1)} percent`).join(', ')}>
+          summary={slices.map((x) => `${x.label} ${x.percent.toFixed(1)} percent`).join(', ')}
+        >
           {allocation.isError ? (
             <ChartNote>{allocation.error.message}</ChartNote>
           ) : slices.length === 0 ? (
-            allocation.isPending ? <LoadingState /> : <ChartNote>No open positions to show yet.</ChartNote>
+            allocation.isPending ? (
+              <LoadingState />
+            ) : (
+              <ChartNote>No open positions to show yet.</ChartNote>
+            )
           ) : by !== 'ticker' && !allocation.isPlaceholderData && isAllUnassigned(slices) ? (
             <ChartNote>
               {`None of your positions has a ${by === 'sector' ? 'sector' : 'asset class'} yet. Set it when you add a trade, or on a position's screen under Classification, to group by it. Use Ticker to see your allocation now.`}
@@ -125,11 +166,17 @@ export default function DashboardScreen() {
 
         {trades.isError ? (
           // a failed request must not read as "no trades"
-          <ErrorBanner message={trades.error.message} onDismiss={() => trades.refetch()} actionLabel="Retry" />
+          <ErrorBanner
+            message={trades.error.message}
+            onDismiss={() => trades.refetch()}
+            actionLabel="Retry"
+          />
         ) : trades.isPending ? (
           <LoadingState />
         ) : trades.data.length === 0 ? (
-          <ThemedText themeColor="textSecondary">No trades yet. Add your first buy to see your portfolio here.</ThemedText>
+          <ThemedText themeColor="textSecondary">
+            No trades yet. Add your first buy to see your portfolio here.
+          </ThemedText>
         ) : (
           trades.data.map((t) => <TradeRow key={t.id} trade={t} />)
         )}
@@ -139,9 +186,20 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { gap: Spacing.three, paddingVertical: Spacing.three, paddingBottom: BottomTabInset + Spacing.four },
+  content: {
+    gap: Spacing.three,
+    paddingVertical: Spacing.three,
+    paddingBottom: BottomTabInset + Spacing.four,
+  },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   card: { padding: Spacing.four, borderRadius: Spacing.four, gap: Spacing.one },
   value: { fontSize: 40, lineHeight: 48 },
   filterRow: { gap: Spacing.two, marginTop: Spacing.two },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: Spacing.two },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: Spacing.two,
+  },
 });

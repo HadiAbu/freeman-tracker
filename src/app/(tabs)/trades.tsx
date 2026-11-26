@@ -1,18 +1,19 @@
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 
-import { Button } from '@/components/button';
-import { ErrorBanner } from '@/components/error-banner';
-import { Screen } from '@/components/screen';
-import { EmptyState, ErrorState, LoadingState } from '@/components/screen-state';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { TradeRow } from '@/components/trade-row';
+import { Button } from '@/components/ui/button';
+import { ErrorBanner } from '@/components/feedback/error-banner';
+import { Screen } from '@/components/layout/screen';
+import { EmptyState, ErrorState, LoadingState } from '@/components/feedback/screen-state';
+import { ThemedText } from '@/components/ui/themed-text';
+import { ThemedView } from '@/components/ui/themed-view';
+import { TradeRow } from '@/components/rows/trade-row';
 import { BottomTabInset, Spacing } from '@/constants/theme';
 import { useDeleteTrade, useTradePages } from '@/hooks/use-trades';
 import { haptic } from '@/lib/haptics';
 import { confirmDestructive } from '@/lib/confirm';
+import { usePreferences } from '@/stores/preferences';
 import type { Side, Trade } from '@/types';
 
 const FILTERS: { label: string; value: Side | undefined }[] = [
@@ -26,27 +27,43 @@ function confirmDelete(trade: Trade, onConfirm: () => void) {
   confirmDestructive('Delete trade?', message, 'Delete', onConfirm);
 }
 
+function Separator() {
+  return <View style={styles.separator} />;
+}
+
 export default function TradesScreen() {
   const router = useRouter();
-  const [side, setSide] = useState<Side | undefined>(undefined);
+  // remembered between launches (null is "All")
+  const savedSide = usePreferences((s) => s.tradesSide);
+  const setSavedSide = usePreferences((s) => s.setTradesSide);
+  const side: Side | undefined = savedSide ?? undefined;
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const trades = useTradePages(side);
-  const remove = useDeleteTrade();
+  const { mutate: removeTrade } = useDeleteTrade();
 
   const items = trades.data?.pages.flat() ?? [];
 
-  const onDelete = (trade: Trade) =>
-    confirmDelete(trade, () => {
-      setDeleteError(null);
-      remove.mutate(trade.id, {
-        onSuccess: () => haptic('success'),
-        onError: (e) => {
-          haptic('error');
-          // e.g. 409: deleting a buy that a later sell depends on
-          setDeleteError(e.message);
-        },
-      });
-    });
+  // Stable identity, so memoized rows are not redrawn every time this screen updates.
+  const onDelete = useCallback(
+    (trade: Trade) =>
+      confirmDelete(trade, () => {
+        setDeleteError(null);
+        removeTrade(trade.id, {
+          onSuccess: () => haptic('success'),
+          onError: (e) => {
+            haptic('error');
+            // e.g. 409: deleting a buy that a later sell depends on
+            setDeleteError(e.message);
+          },
+        });
+      }),
+    [removeTrade],
+  );
+
+  const renderItem = useCallback(
+    ({ item }: { item: Trade }) => <TradeRow trade={item} onLongPress={onDelete} />,
+    [onDelete],
+  );
 
   const loadMore = () => {
     if (trades.hasNextPage && !trades.isFetchingNextPage) trades.fetchNextPage();
@@ -67,8 +84,12 @@ export default function TradesScreen() {
               key={f.label}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
-              onPress={() => setSide(f.value)}>
-              <ThemedView type={active ? 'backgroundSelected' : 'backgroundElement'} style={styles.pill}>
+              onPress={() => setSavedSide(f.value ?? null)}
+            >
+              <ThemedView
+                type={active ? 'backgroundSelected' : 'backgroundElement'}
+                style={styles.pill}
+              >
                 <ThemedText type="small" themeColor={active ? 'text' : 'textSecondary'}>
                   {f.label}
                 </ThemedText>
@@ -92,10 +113,13 @@ export default function TradesScreen() {
         <FlatList
           data={items}
           keyExtractor={(t) => String(t.id)}
-          renderItem={({ item }) => <TradeRow trade={item} onLongPress={onDelete} />}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          renderItem={renderItem}
+          ItemSeparatorComponent={Separator}
           ListEmptyComponent={
-            <EmptyState title="No trades yet" hint="Tap “Add trade” to log your first buy or sell." />
+            <EmptyState
+              title="No trades yet"
+              hint="Tap “Add trade” to log your first buy or sell."
+            />
           }
           ListFooterComponent={
             trades.hasNextPage ? (
@@ -127,7 +151,11 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.three,
   },
   filters: { flexDirection: 'row', gap: Spacing.two, paddingBottom: Spacing.three },
-  pill: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, borderRadius: Spacing.five },
+  pill: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    borderRadius: Spacing.five,
+  },
   banner: { paddingBottom: Spacing.three },
   list: { flexGrow: 1, paddingBottom: BottomTabInset + Spacing.four },
   separator: { height: Spacing.two },

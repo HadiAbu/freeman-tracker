@@ -63,7 +63,9 @@ test('does nothing on web', async () => {
 
 test('never throws or rejects when haptics are missing entirely', async () => {
   jest.replaceProperty(Platform, 'OS', 'ios');
-  notification.mockRejectedValue(new Error('The method or property notificationAsync is not available on ios'));
+  notification.mockRejectedValue(
+    new Error('The method or property notificationAsync is not available on ios'),
+  );
   const unhandled = jest.fn();
   process.on('unhandledRejection', unhandled);
   try {

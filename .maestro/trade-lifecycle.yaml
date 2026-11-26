@@ -2,7 +2,9 @@ appId: ${APP_ID}
 name: Trades - add a buy, see it listed, delete it
 ---
 # Writes to the API the app points at, then removes what it wrote. Use a test API.
-- launchApp
+# Start clean: a saved add-trade draft or "hide balances" would change what the flow sees.
+- launchApp:
+    clearState: true
 - tapOn: Trades
 - tapOn: Add trade
 

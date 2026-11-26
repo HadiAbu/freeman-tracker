@@ -2,8 +2,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { ThemedText } from '@/components/ui/themed-text';
+import { ThemedView } from '@/components/ui/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { confidenceLabel, stanceSpoken, stanceTitle } from '@/lib/stance';
@@ -24,7 +24,8 @@ export function StanceChip({ stance, confidence }: { stance: Stance; confidence:
       type="backgroundElement"
       style={styles.chip}
       accessible
-      accessibilityLabel={stanceSpoken(stance, confidence)}>
+      accessibilityLabel={stanceSpoken(stance, confidence)}
+    >
       <MaterialCommunityIcons name={ICONS[stance]} size={28} color={theme.text} />
       <View>
         <ThemedText type="smallBold">{stanceTitle(stance)}</ThemedText>

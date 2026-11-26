@@ -14,7 +14,9 @@ jest.mock('@/lib/api', () => {
 const ANALYSIS = { ticker: 'AAPL', stance: 'hold' } as Analysis;
 
 function wrapper() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false, gcTime: Infinity } } });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false, gcTime: Infinity } },
+  });
   const Wrap = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   );

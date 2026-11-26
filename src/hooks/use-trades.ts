@@ -1,6 +1,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { api } from '@/lib/api';
+import { useTradeDraft } from '@/stores/trade-draft';
 import type { HoldingMeta, NewTrade, Side } from '@/types';
 
 // Every trades query lives under ['trades'], so one invalidation refreshes all of them.
@@ -71,7 +72,13 @@ export function useCreateTrade() {
 export function useCreateTradeWithClassification() {
   const invalidate = useInvalidateAfterTradeChange();
   return useMutation({
-    mutationFn: async ({ trade, classification }: { trade: NewTrade; classification: HoldingMeta | null }) => {
+    mutationFn: async ({
+      trade,
+      classification,
+    }: {
+      trade: NewTrade;
+      classification: HoldingMeta | null;
+    }) => {
       const created = await api.createTrade(trade);
       let classificationFailed = false;
       if (classification) {
@@ -83,7 +90,12 @@ export function useCreateTradeWithClassification() {
       }
       return { trade: created, classificationFailed };
     },
-    onSuccess: invalidate,
+    onSuccess: () => {
+      // Cleared here, not in the screen: this runs even when the screen has been dismissed
+      // mid-request, so a saved trade can never come back as a draft to be saved twice.
+      useTradeDraft.getState().clear();
+      return invalidate();
+    },
   });
 }
 

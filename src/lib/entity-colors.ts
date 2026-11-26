@@ -35,7 +35,13 @@ export function buildSlices(
     }
   }
   if (otherValue > 0) {
-    named.push({ label: OTHER_LABEL, value: otherValue, percent: otherPercent, slot: usable, color: otherColor });
+    named.push({
+      label: OTHER_LABEL,
+      value: otherValue,
+      percent: otherPercent,
+      slot: usable,
+      color: otherColor,
+    });
   }
   return named;
 }

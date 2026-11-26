@@ -1,3 +1,4 @@
+import { todayISO } from '@/lib/format';
 import type { Holding, PortfolioSummary, Trade, WatchItem } from '@/types';
 
 export const trade = (over: Partial<Trade> = {}): Trade => ({
@@ -19,6 +20,8 @@ export const holding = (over: Partial<Holding> = {}): Holding => ({
   cost_basis: 1500,
   price: 180,
   price_source: 'price',
+  price_as_of: todayISO(), // today, so a fixture price is never flagged stale
+  price_kind: 'manual',
   market_value: 1800,
   unrealized_pnl: 300,
   unrealized_pct: 20,
@@ -46,6 +49,8 @@ export const watchItem = (over: Partial<WatchItem> = {}): WatchItem => ({
   target_price: 200,
   note: null,
   price: 180,
+  price_as_of: todayISO(),
+  price_kind: 'manual',
   pct_to_target: 11.11,
   ...over,
 });

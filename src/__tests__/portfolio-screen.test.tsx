@@ -29,7 +29,15 @@ beforeEach(() => {
     summary({
       holdings: [
         holding({ ticker: 'AAPL', unrealized_pnl: 300, unrealized_pct: 20 }),
-        holding({ ticker: 'TSLA', name: null, shares: 4, avg_cost: 250, market_value: 800, unrealized_pnl: -200, unrealized_pct: -20 }),
+        holding({
+          ticker: 'TSLA',
+          name: null,
+          shares: 4,
+          avg_cost: 250,
+          market_value: 800,
+          unrealized_pnl: -200,
+          unrealized_pct: -20,
+        }),
       ],
     }),
   );

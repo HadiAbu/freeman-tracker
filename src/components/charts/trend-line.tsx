@@ -6,6 +6,7 @@ import { ChartNote } from '@/components/charts/chart-card';
 import { useChartTheme } from '@/constants/chart-theme';
 import { Spacing } from '@/constants/theme';
 import { useChartWidth } from '@/hooks/use-chart-width';
+import { useMoney } from '@/hooks/use-money';
 import { formatCompactCurrency, formatCurrency, formatShortDate, niceStep } from '@/lib/format';
 
 export type TrendPoint = { date: string; value: number };
@@ -17,6 +18,8 @@ type Props = {
   secondary?: number[];
   secondaryName?: string;
   emptyHint?: string;
+  /** The values are the user's own money (not a market price): mask them while balances are hidden. */
+  sensitive?: boolean;
 };
 
 const Y_LABEL_WIDTH = 52;
@@ -43,8 +46,11 @@ export function TrendLine({
   secondary: allSecondary,
   secondaryName,
   emptyHint,
+  sensitive = false,
 }: Props) {
   const c = useChartTheme();
+  const money = useMoney();
+  const mask = sensitive && money.hidden;
   const width = useChartWidth();
   // A phone cannot show more than a few dozen distinct points, and the library gives each
   // x label only one point's width. Thin long histories evenly (always keeping first and last).
@@ -76,7 +82,11 @@ export function TrendLine({
     // only the last point gets a marker (the custom end dot below)
     hideDataPoint: i !== n - 1,
   }));
-  const second = secondary?.map((v, i) => ({ value: v, date: points[i].date, hideDataPoint: true }));
+  const second = secondary?.map((v, i) => ({
+    value: v,
+    date: points[i].date,
+    hideDataPoint: true,
+  }));
 
   const endDot = (
     <View style={[styles.dotRing, { backgroundColor: c.primary, borderColor: c.surface }]} />
@@ -114,7 +124,9 @@ export function TrendLine({
         noOfSections={sections}
         yAxisLabelWidth={Y_LABEL_WIDTH}
         // the library already adds yAxisOffset to the tick labels it passes in
-        formatYLabel={(v: string) => formatCompactCurrency(Number(v))}
+        formatYLabel={(v: string) =>
+          mask ? money.compactCurrency(Number(v)) : formatCompactCurrency(Number(v))
+        }
         yAxisTextStyle={{ color: c.muted, fontSize: 11 }}
         yAxisColor="transparent"
         xAxisColor={c.axis}
@@ -135,13 +147,17 @@ export function TrendLine({
           autoAdjustPointerLabelPosition: true,
           pointerLabelComponent: (items: { date: string; value: number }[]) => (
             <View style={[styles.tip, { backgroundColor: c.surface, borderColor: c.border }]}>
-              <Text style={[styles.tipDate, { color: c.inkSecondary }]}>{formatShortDate(items[0].date)}</Text>
+              <Text style={[styles.tipDate, { color: c.inkSecondary }]}>
+                {formatShortDate(items[0].date)}
+              </Text>
               <Text style={[styles.tipValue, { color: c.ink }]}>
-                {primaryName} {formatCurrency(items[0].value)}
+                {primaryName}{' '}
+                {mask ? money.currency(items[0].value) : formatCurrency(items[0].value)}
               </Text>
               {secondary && items[1] ? (
                 <Text style={[styles.tipValue, { color: c.ink }]}>
-                  {secondaryName} {formatCurrency(items[1].value)}
+                  {secondaryName}{' '}
+                  {mask ? money.currency(items[1].value) : formatCurrency(items[1].value)}
                 </Text>
               ) : null}
             </View>
@@ -151,7 +167,9 @@ export function TrendLine({
 
       <View style={styles.dates}>
         <Text style={[styles.dateText, { color: c.muted }]}>{formatShortDate(points[0].date)}</Text>
-        <Text style={[styles.dateText, { color: c.muted }]}>{formatShortDate(points[n - 1].date)}</Text>
+        <Text style={[styles.dateText, { color: c.muted }]}>
+          {formatShortDate(points[n - 1].date)}
+        </Text>
       </View>
 
       {secondary ? (
@@ -174,8 +192,20 @@ function LegendKey({ color, label, ink }: { color: string; label: string; ink: s
 }
 
 const styles = StyleSheet.create({
-  dotRing: { width: 12, height: 12, borderRadius: 6, borderWidth: 2, marginTop: -2, marginLeft: -2 },
-  tip: { padding: Spacing.two, borderRadius: Spacing.two, borderWidth: StyleSheet.hairlineWidth, gap: 2 },
+  dotRing: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    marginTop: -2,
+    marginLeft: -2,
+  },
+  tip: {
+    padding: Spacing.two,
+    borderRadius: Spacing.two,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: 2,
+  },
   tipDate: { fontSize: 11 },
   tipValue: { fontSize: 12, fontWeight: '600' },
   dates: {
@@ -185,7 +215,12 @@ const styles = StyleSheet.create({
     paddingRight: END_SPACING,
   },
   dateText: { fontSize: 11 },
-  legend: { flexDirection: 'row', gap: Spacing.three, paddingTop: Spacing.three, paddingLeft: Y_LABEL_WIDTH },
+  legend: {
+    flexDirection: 'row',
+    gap: Spacing.three,
+    paddingTop: Spacing.three,
+    paddingLeft: Y_LABEL_WIDTH,
+  },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   legendLine: { width: 16, height: 2, borderRadius: 1 },
   legendText: { fontSize: 12 },

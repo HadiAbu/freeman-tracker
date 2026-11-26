@@ -4,7 +4,7 @@ import { PieChart } from 'react-native-gifted-charts';
 
 import { useChartTheme } from '@/constants/chart-theme';
 import { Spacing } from '@/constants/theme';
-import { formatCurrency } from '@/lib/format';
+import { useMoney } from '@/hooks/use-money';
 import type { ColoredSlice } from '@/lib/entity-colors';
 
 type Props = { slices: ColoredSlice[]; total: number };
@@ -19,6 +19,7 @@ const INNER = 56;
  */
 export function AllocationDonut({ slices, total }: Props) {
   const c = useChartTheme();
+  const money = useMoney();
   const [focused, setFocused] = useState<number | null>(null);
   const active = focused !== null ? slices[focused] : undefined;
   const toggle = (i: number) => setFocused((cur) => (cur === i ? null : i));
@@ -46,7 +47,7 @@ export function AllocationDonut({ slices, total }: Props) {
               {active ? active.label : 'Total'}
             </Text>
             <Text style={[styles.centerValue, { color: c.ink }]} numberOfLines={1}>
-              {active ? `${active.percent.toFixed(1)}%` : formatCurrency(total)}
+              {active ? `${active.percent.toFixed(1)}%` : money.currency(total)}
             </Text>
           </View>
         )}
@@ -57,15 +58,21 @@ export function AllocationDonut({ slices, total }: Props) {
           <Pressable
             key={s.label}
             accessibilityRole="button"
-            accessibilityLabel={`${s.label}, ${formatCurrency(s.value)}, ${s.percent.toFixed(1)} percent`}
+            accessibilityLabel={`${s.label}, ${money.currency(s.value)}, ${s.percent.toFixed(1)} percent`}
             accessibilityState={{ selected: focused === i }}
             onPress={() => toggle(i)}
-            style={styles.row}>
+            style={styles.row}
+          >
             <View style={[styles.swatch, { backgroundColor: s.color }]} />
-            <Text style={[styles.name, { color: c.ink }, focused === i && styles.bold]} numberOfLines={1}>
+            <Text
+              style={[styles.name, { color: c.ink }, focused === i && styles.bold]}
+              numberOfLines={1}
+            >
               {s.label}
             </Text>
-            <Text style={[styles.amount, { color: c.inkSecondary }]}>{formatCurrency(s.value)}</Text>
+            <Text style={[styles.amount, { color: c.inkSecondary }]}>
+              {money.currency(s.value)}
+            </Text>
             <Text style={[styles.percent, { color: c.inkSecondary }]}>{s.percent.toFixed(1)}%</Text>
           </Pressable>
         ))}

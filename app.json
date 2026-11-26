@@ -2,7 +2,7 @@
   "expo": {
     "name": "Freeman",
     "slug": "freeman",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "freemantracker",
@@ -35,7 +35,8 @@
           }
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -47,6 +48,12 @@
         "projectId": "b897e2b6-490e-46a5-bcdf-fc87325b29c4"
       }
     },
-    "owner": "freemenalive"
+    "owner": "freemenalive",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/b897e2b6-490e-46a5-bcdf-fc87325b29c4"
+    }
   }
 }

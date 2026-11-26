@@ -1,0 +1,12 @@
+# Generated, vendored or not ours to format.
+node_modules
+dist
+dist-e2e
+.expo
+android
+ios
+coverage
+api
+package-lock.json
+expo-env.d.ts
+*.md

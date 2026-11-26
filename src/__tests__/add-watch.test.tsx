@@ -30,7 +30,12 @@ test('saves a normalized item and closes', async () => {
   await fireEvent.changeText(screen.getByLabelText('Target price (optional)'), '500,5');
   await fireEvent.press(save());
   await waitFor(() => expect(mockBack).toHaveBeenCalled());
-  expect(addWatch).toHaveBeenCalledWith({ ticker: 'NVDA', name: 'NVIDIA', target_price: 500.5, note: null });
+  expect(addWatch).toHaveBeenCalledWith({
+    ticker: 'NVDA',
+    name: 'NVIDIA',
+    target_price: 500.5,
+    note: null,
+  });
 });
 
 test('blank optional fields are sent as null, not empty strings or zero', async () => {
@@ -38,17 +43,25 @@ test('blank optional fields are sent as null, not empty strings or zero', async 
   await fireEvent.changeText(screen.getByLabelText('Ticker'), 'aapl');
   await fireEvent.press(save());
   await waitFor(() => expect(addWatch).toHaveBeenCalled());
-  expect(addWatch).toHaveBeenCalledWith({ ticker: 'AAPL', name: null, target_price: null, note: null });
+  expect(addWatch).toHaveBeenCalledWith({
+    ticker: 'AAPL',
+    name: null,
+    target_price: null,
+    note: null,
+  });
 });
 
-test.each(['', 'A B', 'x'.repeat(16), 'AAPL;DROP'])('rejects ticker %p without a request', async (bad) => {
-  await renderWithClient(<AddWatchScreen />);
-  await fireEvent.changeText(screen.getByLabelText('Ticker'), bad);
-  await fireEvent.press(save());
-  expect(screen.getByText('Enter a ticker, e.g. NVDA')).toBeTruthy();
-  expect(addWatch).not.toHaveBeenCalled();
-  expect(mockBack).not.toHaveBeenCalled();
-});
+test.each(['', 'A B', 'x'.repeat(16), 'AAPL;DROP'])(
+  'rejects ticker %p without a request',
+  async (bad) => {
+    await renderWithClient(<AddWatchScreen />);
+    await fireEvent.changeText(screen.getByLabelText('Ticker'), bad);
+    await fireEvent.press(save());
+    expect(screen.getByText('Enter a ticker, e.g. NVDA')).toBeTruthy();
+    expect(addWatch).not.toHaveBeenCalled();
+    expect(mockBack).not.toHaveBeenCalled();
+  },
+);
 
 test('rejects a negative or non-numeric target', async () => {
   await renderWithClient(<AddWatchScreen />);

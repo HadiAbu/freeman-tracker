@@ -4,7 +4,7 @@ A personal portfolio tracker for stocks: log buys and sells, see allocation, val
 gain/loss, and keep a watchlist with target prices. Prices are entered by hand for now.
 
 Expo SDK 58 · React Native · Expo Router · TanStack Query · react-native-gifted-charts.
-The backend is a separate FastAPI + Turso service (`freeman-api`, in the parent `CLaude` repo).
+The backend is a FastAPI + Turso service in this repo, in [`api/`](api/README.md).
 
 ## Screens
 
@@ -20,16 +20,17 @@ asset class (these drive the Sector and Asset class views).
 
 ## Run it locally
 
-1. Start the API (see `freeman-api/README.md`). For a phone on your network use `--host 0.0.0.0`.
+1. Start the API (see `api/README.md`) and create an account with `python -m scripts.create_user <email>`.
+   For a phone on your network use `--host 0.0.0.0`.
 2. Create `.env.local` (git-ignored) in this folder:
 
    ```
    EXPO_PUBLIC_API_URL=http://<your-LAN-IP>:8000
-   EXPO_PUBLIC_API_KEY=<the API_KEY from freeman-api/.env>
    ```
 
-   `EXPO_PUBLIC_*` values are bundled into the app, so anyone with the app can read the key. That is
-   accepted for a personal single-user app; real accounts replace it later.
+   `EXPO_PUBLIC_*` values are bundled into the app and readable by anyone who has it, so they must
+   never be secrets. The API address is not one: it is public. Access to data is by signing in; there
+   is no key in the app.
 3. Install and start:
 
    ```bash
@@ -37,11 +38,31 @@ asset class (these drive the Sector and Asset class views).
    npx expo start        # then press w for web, or scan the QR code with Expo Go
    ```
 
+## App state
+
+Server data (trades, holdings, prices, analyses) lives in TanStack Query, and its cache is saved to the
+device so the app opens with the last known data. Settings and drafts the user creates live in two
+small Zustand stores (`src/stores/`), saved to AsyncStorage:
+
+| Store | What it keeps |
+|---|---|
+| `preferences` | **Hide balances** (the eye button on Dashboard and Portfolio masks every amount and share count; percentages and a ticker's market price stay visible), the dashboard allocation view, the Trades filter, and the starting value of "Use my position" |
+| `trade-draft` | The add-trade form, so a dismissed modal or a killed app loses nothing. Cancel discards it, a saved trade clears it, and a date is only kept if the user typed one |
+
+The root layout waits for both stores before drawing any screen, so a saved "hide balances" is applied
+before the first frame instead of flashing real amounts. If storage fails to load, the stores keep
+their defaults and the app still opens. Values read back from storage are validated, so a bad or old
+saved value falls back to its default.
+
+Format money through `useMoney()` (`src/hooks/use-money.ts`), not `formatCurrency` directly, so it
+respects hide-balances. Plain `formatCurrency` is right for a ticker's market price.
+
 ## Checks
 
 ```bash
 npm run typecheck     # tsc --noEmit
 npm run lint          # expo lint
+npm run format:check  # Prettier (npm run format fixes it)
 npm test              # Jest, fast, no coverage
 npm run test:ci       # Jest with coverage and the coverage thresholds (what CI runs)
 npx expo-doctor
@@ -50,6 +71,10 @@ npx expo-doctor
 **Route types gotcha.** `expo lint`, `expo export` and `expo install` rewrite the generated
 `.expo/types/router.d.ts` in a form that makes `tsc` reject `"/"`. Regenerate it by starting the dev
 server once (`npx expo start`), then run `tsc`.
+
+Where things live and the rules for new code: [docs/architecture.md](docs/architecture.md) and
+[docs/conventions.md](docs/conventions.md). To make `git blame` skip the repo-wide formatting
+commit, run once: `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
 
 ## Tests
 
@@ -94,13 +119,17 @@ directly.
 
 ## Builds (EAS)
 
-`eas.json` defines three profiles, each tied to an EAS environment of the same name:
+`eas.json` defines three profiles, each tied to an EAS environment and an EAS Update channel of the
+same name, so a build only receives updates meant for it:
 
 | Profile | Use |
 |---|---|
 | `development` | Development client (needs `expo-dev-client`), internal distribution |
-| `preview` | Installable build for testing on your own devices |
-| `production` | Store build, build number auto-incremented |
+| `preview` | Installable build for testing on your own devices; receives updates from the `preview` channel |
+| `production` | Store build, build number auto-incremented; receives updates from the `production` channel |
+
+Updates and store releases are staged (10% first). See [docs/releasing.md](docs/releasing.md) for the
+promotion path, rollout, rollback and the runtime-version rule.
 
 EAS builds do not read `.env.local`. Set the app's variables per environment first:
 
@@ -119,7 +148,7 @@ eas build --profile development --platform android
 
 ## Phases
 
-1. API: trades, watchlist, prices, derived portfolio math (`freeman-api`)
+1. API: trades, watchlist, prices, derived portfolio math (`api/`)
 2. App shell, trades list, add-trade flow
 3. Charts, holdings list, position detail
 4. Watchlist and manual price marks

@@ -3,7 +3,12 @@ import { act, renderHook, waitFor } from '@testing-library/react-native';
 import React from 'react';
 
 import { useAllocation } from '@/hooks/use-portfolio';
-import { useCreateTrade, useCreateTradeWithClassification, useDeleteTrade, useTradePages } from '@/hooks/use-trades';
+import {
+  useCreateTrade,
+  useCreateTradeWithClassification,
+  useDeleteTrade,
+  useTradePages,
+} from '@/hooks/use-trades';
 import { useAddPrice, useAddWatch, useDeleteWatch } from '@/hooks/use-watchlist';
 import { api } from '@/lib/api';
 import { trade } from '@/test-utils/fixtures';
@@ -35,7 +40,8 @@ async function setup<T>(hook: () => T) {
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   );
   const view = await renderHook(hook, { wrapper });
-  const invalidatedKeys = () => invalidate.mock.calls.map(([f]) => (f as { queryKey: unknown[] }).queryKey);
+  const invalidatedKeys = () =>
+    invalidate.mock.calls.map(([f]) => (f as { queryKey: unknown[] }).queryKey);
   return { client, invalidatedKeys, ...view };
 }
 
@@ -68,7 +74,10 @@ describe('trade mutations refresh the trade lists and everything derived from th
     const { result, invalidatedKeys } = await setup(() => useCreateTradeWithClassification());
     let out: { classificationFailed: boolean } | undefined;
     await act(async () => {
-      out = await result.current.mutateAsync({ trade: trade({ ticker: 'NVDA' }), classification: { sector: 'Tech' } });
+      out = await result.current.mutateAsync({
+        trade: trade({ ticker: 'NVDA' }),
+        classification: { sector: 'Tech' },
+      });
     });
     expect(out?.classificationFailed).toBe(true);
     // the trade was saved, so the lists still refresh
@@ -105,13 +114,16 @@ describe('watchlist and price mutations', () => {
     await act(async () => {
       await result.current.mutateAsync({ ticker: 'AAPL', price: 10, as_of: '2026-11-01' });
     });
-    expect(invalidatedKeys()).toEqual(expect.arrayContaining([['portfolio'], ['watchlist'], ['prices', 'AAPL']]));
+    expect(invalidatedKeys()).toEqual(
+      expect.arrayContaining([['portfolio'], ['watchlist'], ['prices', 'AAPL']]),
+    );
     expect(invalidatedKeys()).toHaveLength(3);
   });
 });
 
 describe('useTradePages', () => {
-  const page = (n: number, from = 1) => Array.from({ length: n }, (_, i) => trade({ id: from + i }));
+  const page = (n: number, from = 1) =>
+    Array.from({ length: n }, (_, i) => trade({ id: from + i }));
 
   test('a full page leads to a next page at the next offset; a short page ends the list', async () => {
     mocked.listTrades.mockResolvedValueOnce(page(100)).mockResolvedValueOnce(page(3, 101));

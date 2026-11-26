@@ -25,7 +25,12 @@ jest.mock('@/lib/api', () => {
   const actual = jest.requireActual('@/lib/api');
   return {
     ...actual,
-    api: { portfolioSummary: jest.fn(), listTrades: jest.fn(), history: jest.fn(), allocation: jest.fn() },
+    api: {
+      portfolioSummary: jest.fn(),
+      listTrades: jest.fn(),
+      history: jest.fn(),
+      allocation: jest.fn(),
+    },
   };
 });
 
@@ -34,7 +39,12 @@ const listTrades = api.listTrades as jest.Mock;
 const history = api.history as jest.Mock;
 const allocation = api.allocation as jest.Mock;
 
-const slice = (label: string, percent: number, slot: number) => ({ label, value: percent * 100, percent, slot });
+const slice = (label: string, percent: number, slot: number) => ({
+  label,
+  value: percent * 100,
+  percent,
+  slot,
+});
 
 beforeEach(() => {
   jest.clearAllMocks();
