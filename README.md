@@ -1,156 +1,158 @@
 # Freeman
 
-A personal portfolio tracker for stocks: log buys and sells, see allocation, value over time and
-gain/loss, and keep a watchlist with target prices. Prices are entered by hand for now.
+A personal stock portfolio tracker. Log buys and sells, see allocation, value over time and gain or
+loss, and keep a watchlist that emails you when a price reaches a limit you set.
 
-Expo SDK 58 · React Native · Expo Router · TanStack Query · react-native-gifted-charts.
-The backend is a FastAPI + Turso service in this repo, in [`api/`](api/README.md).
+An Expo (React Native) app with its own FastAPI + Turso backend in [`api/`](api/README.md).
 
-## Screens
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/dashboard.png" alt="Dashboard: portfolio value, unrealized gain and a value-over-time chart" width="260"></td>
+    <td align="center"><img src="docs/screenshots/portfolio.png" alt="Portfolio: gain or loss per holding as bars, then the holdings list" width="260"></td>
+  </tr>
+  <tr>
+    <td align="center">Dashboard</td>
+    <td align="center">Portfolio</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/position.png" alt="Position screen for one stock: value, shares, average cost and a price chart" width="260"></td>
+    <td align="center"><img src="docs/screenshots/watchlist.png" alt="Watchlist: alert limits, distance to each, and one paused alert" width="260"></td>
+  </tr>
+  <tr>
+    <td align="center">Position</td>
+    <td align="center">Watchlist and price alerts</td>
+  </tr>
+</table>
 
-| Tab | What it does |
-|---|---|
-| Dashboard | Portfolio value, value-over-time line, allocation donut (by ticker, sector or asset class) |
-| Portfolio | Gain/loss bars and the holdings list; tap a holding for its position screen |
-| Watchlist | Tickers you follow, with target price and distance to target; tap to log a price |
-| Trades | Every buy and sell; long press to delete |
+_Screenshots are from the web build with made-up sample data._
 
-A position screen shows stats, a price line, that ticker's trades, and a form to set its sector and
-asset class (these drive the Sector and Asset class views).
+## Features
+
+- **Portfolio math on the server:** average cost, unrealized and realized gain, value over time, and
+  allocation by ticker, sector or asset class. A sale larger than the shares held is rejected.
+- **Prices:** market quotes from Finnhub, refreshed when the app opens, or prices you enter yourself.
+  Each price shows where it came from and when, and old ones are marked stale.
+- **Email price alerts:** an upper and a lower limit per watchlist stock. The server checks them every
+  two minutes and emails once when a limit is reached ([how it behaves](api/README.md#price-alerts)).
+- **News analysis (optional):** a buy / hold / sell lean on a ticker, written by an OpenAI model from
+  recent headlines. Every claim must cite a headline that was actually fetched. Not financial advice.
+- **Accounts:** several users, each seeing only their own data. Argon2id password hashes, short-lived
+  access tokens and single-use refresh tokens.
+- **Everyday details:** hide-balances mode, the last data stays available offline, unsaved trade
+  drafts are kept, and an error in one chart does not take down the screen.
+
+## Tech stack
+
+| Part | Built with |
+| --- | --- |
+| App | Expo SDK 58, React Native, TypeScript, Expo Router, TanStack Query, Zustand, react-native-gifted-charts |
+| API | FastAPI, Pydantic, Turso (libSQL) |
+| Quality | Jest and Testing Library, pytest, ESLint, Prettier, GitHub Actions |
+
+How the code is laid out: [docs/architecture.md](docs/architecture.md). Rules for new code:
+[docs/conventions.md](docs/conventions.md).
+
+## Status
+
+- The screenshots show the web build. **The current version has not yet been tested on a phone or in a
+  store build.**
+- Price alerts run inside the API server, so they work only while it is running. Run one server
+  process, or each one sends its own emails.
+- It is built for personal use. Keep registration off (the default) unless you add the protections
+  listed in the [API notes](api/README.md#price-alerts).
 
 ## Run it locally
 
-1. Start the API (see `api/README.md`) and create an account with `python -m scripts.create_user <email>`.
-   For a phone on your network use `--host 0.0.0.0`.
-2. Create `.env.local` (git-ignored) in this folder:
+You need Node 22 and Python 3.13 (the versions CI uses).
 
-   ```
-   EXPO_PUBLIC_API_URL=http://<your-LAN-IP>:8000
-   ```
+**1. API** (from `api/`; paths are for Windows, use `.venv/bin/` elsewhere):
 
-   `EXPO_PUBLIC_*` values are bundled into the app and readable by anyone who has it, so they must
-   never be secrets. The API address is not one: it is public. Access to data is by signing in; there
-   is no key in the app.
-3. Install and start:
+```bash
+python -m venv .venv
+.venv/Scripts/pip install -r requirements.txt
+cp .env.example .env                     # set JWT_SECRET (at least 32 characters)
+.venv/Scripts/python -m scripts.create_user you@example.com
+.venv/Scripts/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
 
-   ```bash
-   npm install
-   npx expo start        # then press w for web, or scan the QR code with Expo Go
-   ```
+For the web app, also set `CORS_ORIGINS=http://localhost:8081` in `api/.env`. Market prices, email
+alerts and news analysis are optional; [`api/README.md`](api/README.md) lists what each one needs.
 
-## App state
+**2. App** (from the repository root). Create `.env.local` (git-ignored):
 
-Server data (trades, holdings, prices, analyses) lives in TanStack Query, and its cache is saved to the
-device so the app opens with the last known data. Settings and drafts the user creates live in two
-small Zustand stores (`src/stores/`), saved to AsyncStorage:
+```
+EXPO_PUBLIC_API_URL=http://localhost:8000
+```
 
-| Store | What it keeps |
-|---|---|
-| `preferences` | **Hide balances** (the eye button on Dashboard and Portfolio masks every amount and share count; percentages and a ticker's market price stay visible), the dashboard allocation view, the Trades filter, and the starting value of "Use my position" |
-| `trade-draft` | The add-trade form, so a dismissed modal or a killed app loses nothing. Cancel discards it, a saved trade clears it, and a date is only kept if the user typed one |
+On a phone, use your computer's network address instead of `localhost`. `EXPO_PUBLIC_*` values are
+bundled into the app and readable by anyone who has it, so never put a secret in one. The app holds no
+API key: access to data is by signing in.
 
-The root layout waits for both stores before drawing any screen, so a saved "hide balances" is applied
-before the first frame instead of flashing real amounts. If storage fails to load, the stores keep
-their defaults and the app still opens. Values read back from storage are validated, so a bad or old
-saved value falls back to its default.
+```bash
+npm install
+npx expo start        # press w for web
+```
 
-Format money through `useMoney()` (`src/hooks/use-money.ts`), not `formatCurrency` directly, so it
-respects hide-balances. Plain `formatCurrency` is right for a ticker's market price.
-
-## Checks
+## Tests and checks
 
 ```bash
 npm run typecheck     # tsc --noEmit
 npm run lint          # expo lint
 npm run format:check  # Prettier (npm run format fixes it)
 npm test              # Jest, fast, no coverage
-npm run test:ci       # Jest with coverage and the coverage thresholds (what CI runs)
-npx expo-doctor
+npm run test:ci       # Jest with the coverage thresholds (what CI runs)
+cd api && .venv/Scripts/python -m pytest -q
 ```
 
-**Route types gotcha.** `expo lint`, `expo export` and `expo install` rewrite the generated
-`.expo/types/router.d.ts` in a form that makes `tsc` reject `"/"`. Regenerate it by starting the dev
-server once (`npx expo start`), then run `tsc`.
+CI runs the API tests, then type checking, lint, formatting and the app tests with coverage.
 
-Where things live and the rules for new code: [docs/architecture.md](docs/architecture.md) and
-[docs/conventions.md](docs/conventions.md). To make `git blame` skip the repo-wide formatting
-commit, run once: `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
+- Screen tests live in `src/__tests__/`; other tests sit next to their code. Keep test files out of
+  `src/app/`, because every file there becomes a route.
+- `src/test-utils/` has `renderWithClient` (a fresh React Query client per test) and typed fixtures.
+- App tests mock the API and the router, and API tests use a temporary database and fake providers, so
+  neither touches the network.
+- **Route types gotcha.** `expo lint`, `expo export` and `expo install` rewrite the generated
+  `.expo/types/router.d.ts` in a form that makes `tsc` reject `"/"`. Start the dev server once
+  (`npx expo start`) to regenerate it, then run `tsc`.
+- To make `git blame` skip the repo-wide formatting commit, run once:
+  `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
 
-## Tests
-
-**Unit and component tests (Jest + Testing Library).** Run on every push and pull request by
-`.github/workflows/ci.yml`, which runs typecheck, lint and `npm run test:ci` in that order. Coverage
-must stay above the floor in `jest.config.js`; raise the floor as coverage grows.
-
-- Screen tests live in `src/__tests__/`, hook, component and library tests sit next to their code.
-  Keep test files out of `src/app/`: every file there becomes a route.
-- `src/test-utils/` has `renderWithClient` (a fresh React Query client per test, with the gc timers
-  turned off so Jest can exit) and typed fixtures.
-- Tests mock `@/lib/api` and `expo-router`, so they never touch the network. The SVG charts are
-  mocked in screen tests; their props are what the screen is responsible for.
-
-**End-to-end flows (Maestro).** `.maestro/` drives the real app: a smoke test of every tab, and
-add-then-delete lifecycles for trades and the watchlist. They are not part of CI because they need
-an emulator or device.
+**End-to-end flows (Maestro).** `.maestro/` has a smoke test of every tab and add-then-delete flows
+for trades and the watchlist. They need an emulator or device, so CI does not run them. They write to
+whatever API the app points at: use a test API, not your real data.
 
 ```bash
 # install: https://docs.maestro.dev/getting-started/installing-maestro
 npx expo run:android            # or run:ios, or install a development build from EAS
-APP_ID=<your app's package or bundle id>
-maestro test -e APP_ID=$APP_ID .maestro
+maestro test -e APP_ID=<your app's package or bundle id> .maestro
 ```
 
-The lifecycle flows create records named `E2E…` and delete them at the end, but they do write to
-whatever API the app points at, so point the app at a test or local API, not your real data. Field
-lookups use placeholder text (`AAPL`, `NVDA`, …); if you change a placeholder, update the flows.
+## App state
 
-## Troubleshooting
+Server data lives in TanStack Query, and its cache is saved on the device so the app opens with the
+last known data. Settings and drafts live in two small Zustand stores in `src/stores/`:
 
-**"The method or property X is not available on android" (an `UnavailabilityError`).** Nothing needs
-linking by hand: Expo autolinks native modules, and Expo Go ships its own copy of them. This error
-means the native module inside the app on your phone is out of step with the JS package in
-`node_modules` (Expo sometimes changes a native module in a patch release). Update Expo Go from the
-store first. If it persists, build a development client, which compiles the exact native versions this
-project uses: `eas build --profile development --platform android`.
+| Store | What it keeps |
+| --- | --- |
+| `preferences` | **Hide balances** (masks every amount and share count; percentages and market prices stay visible), the allocation view, the Trades filter, and the starting value of "Use my position" |
+| `trade-draft` | The add-trade form, so a dismissed screen or a closed app loses nothing |
 
-Haptics go through `src/lib/haptics.ts`, which never throws, so a missing haptics module only means no
-vibration, not a crash. Use that helper for any new haptic feedback instead of calling `expo-haptics`
-directly.
+The app waits for both stores before drawing a screen, so hidden balances never flash. Format money
+through `useMoney()` (`src/hooks/use-money.ts`) so it respects that setting.
 
 ## Builds (EAS)
 
-`eas.json` defines three profiles, each tied to an EAS environment and an EAS Update channel of the
-same name, so a build only receives updates meant for it:
+`eas.json` has `development`, `preview` and `production` profiles. EAS builds do not read
+`.env.local`, and a build used away from home needs the API hosted somewhere reachable. Setup, staged
+rollout and rollback are in [docs/releasing.md](docs/releasing.md).
 
-| Profile | Use |
-|---|---|
-| `development` | Development client (needs `expo-dev-client`), internal distribution |
-| `preview` | Installable build for testing on your own devices; receives updates from the `preview` channel |
-| `production` | Store build, build number auto-incremented; receives updates from the `production` channel |
+## Troubleshooting
 
-Updates and store releases are staged (10% first). See [docs/releasing.md](docs/releasing.md) for the
-promotion path, rollout, rollback and the runtime-version rule.
+**`UnavailabilityError` ("The method or property X is not available on android").** The native code
+in the app on your phone does not match the JavaScript package. Update Expo Go from the store. If it
+persists, build a development client: `eas build --profile development --platform android`. Haptics
+go through `src/lib/haptics.ts`, which never throws; use it for any new haptic feedback.
 
-EAS builds do not read `.env.local`. Set the app's variables per environment first:
+## License
 
-```bash
-eas env:set --name EXPO_PUBLIC_API_URL --value https://<your-api-host> --environment preview --visibility plaintext
-eas env:set --name EXPO_PUBLIC_API_KEY --value <key> --environment preview --visibility sensitive
-```
-
-Repeat for `development` and `production`. Before the first build, `app.json` also needs an
-`ios.bundleIdentifier` and an `android.package`. The API must be reachable from the device, so a build
-for use away from home needs the API hosted somewhere public.
-
-```bash
-eas build --profile development --platform android
-```
-
-## Phases
-
-1. API: trades, watchlist, prices, derived portfolio math (`api/`)
-2. App shell, trades list, add-trade flow
-3. Charts, holdings list, position detail
-4. Watchlist and manual price marks
-5. Polish and build configuration (this phase)
-6. Later: live price provider, accounts, notifications, offline cache
+[Apache License 2.0](LICENSE)

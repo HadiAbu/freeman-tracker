@@ -82,7 +82,7 @@ Operating notes:
 | | |
 |---|---|
 | `POST/GET /trades`, `PATCH/DELETE /trades/{id}` | Buys and sells. Changes that would oversell return 409. |
-| `POST/GET /watchlist`, `PATCH/DELETE /watchlist/{id}` | Watchlist with target price; GET adds latest price and `pct_to_target`. |
+| `POST/GET /watchlist`, `PATCH/DELETE /watchlist/{id}` | Watchlist with optional upper and lower alert limits; GET adds the latest price and `pct_to_target` (distance to the upper limit). |
 | `POST /prices`, `GET /prices`, `GET /prices/{ticker}` | Manual price marks (latest per ticker / history). A manual mark is private to its owner. |
 | `POST /prices/refresh` | Fetches current market prices (Finnhub) for your open positions and watchlist and stores them as shared `market` marks, one per ticker per day. Needs `FINNHUB_API_KEY` (else 503). A provider failure is not an error: failed tickers are listed in `failed` and keep their last price. Quotes are cached for 120 s across all users. |
 | `PUT /holdings/{ticker}` | Name, sector, asset class (for allocation pies). |
