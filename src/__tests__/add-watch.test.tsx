@@ -110,3 +110,15 @@ test('Cancel closes without saving', async () => {
   expect(mockBack).toHaveBeenCalled();
   expect(addWatch).not.toHaveBeenCalled();
 });
+
+test.each(['Alert above (optional)', 'Alert below (optional)'])(
+  'rejects an absurdly large %p',
+  async (label) => {
+    await renderWithClient(<AddWatchScreen />);
+    await fireEvent.changeText(screen.getByLabelText('Ticker'), 'AAPL');
+    await fireEvent.changeText(screen.getByLabelText(label), '1e308');
+    await fireEvent.press(save());
+    expect(screen.getByText('That number is too large')).toBeTruthy();
+    expect(addWatch).not.toHaveBeenCalled();
+  },
+);

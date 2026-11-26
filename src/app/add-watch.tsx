@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { TextField } from '@/components/ui/text-field';
 import { ThemedText } from '@/components/ui/themed-text';
 import { useAddWatch } from '@/hooks/use-watchlist';
+import { MAX_AMOUNT, TOO_LARGE_MESSAGE } from '@/lib/amount';
 import { haptic } from '@/lib/haptics';
 
 type Errors = Partial<Record<'ticker' | 'upper' | 'lower', string>>;
@@ -31,7 +32,9 @@ export default function AddWatchScreen() {
     const e: Errors = {};
     if (!/^[A-Za-z0-9.\-]{1,15}$/.test(ticker.trim())) e.ticker = 'Enter a ticker, e.g. NVDA';
     if (!blank(upper) && !isPrice(num(upper))) e.upper = 'Enter a price above 0';
+    else if (num(upper) > MAX_AMOUNT) e.upper = TOO_LARGE_MESSAGE;
     if (!blank(lower) && !isPrice(num(lower))) e.lower = 'Enter a price above 0';
+    else if (num(lower) > MAX_AMOUNT) e.lower = TOO_LARGE_MESSAGE;
     if (!e.upper && !e.lower && !blank(upper) && !blank(lower) && num(lower) >= num(upper)) {
       e.lower = 'Must be below the upper limit';
     }

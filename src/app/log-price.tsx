@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { TextField } from '@/components/ui/text-field';
 import { ThemedText } from '@/components/ui/themed-text';
 import { useAddPrice } from '@/hooks/use-watchlist';
+import { MAX_AMOUNT, TOO_LARGE_MESSAGE } from '@/lib/amount';
 import { haptic } from '@/lib/haptics';
 import { isISODate, todayISO } from '@/lib/format';
 
@@ -28,7 +29,9 @@ export default function LogPriceScreen() {
   function submit() {
     const e: Errors = {};
     if (!/^[A-Za-z0-9.\-]{1,15}$/.test(ticker.trim())) e.ticker = 'Enter a ticker';
-    if (price.trim() === '' || !(num(price) > 0)) e.price = 'Price must be greater than 0';
+    if (price.trim() === '' || !(Number.isFinite(num(price)) && num(price) > 0)) {
+      e.price = 'Price must be greater than 0';
+    } else if (num(price) > MAX_AMOUNT) e.price = TOO_LARGE_MESSAGE;
     if (!isISODate(date.trim())) e.date = 'Use the format YYYY-MM-DD';
     setErrors(e);
     if (Object.keys(e).length > 0) {

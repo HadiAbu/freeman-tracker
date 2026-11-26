@@ -264,9 +264,10 @@ def list_watch(uid: int = Depends(current_user_id), conn=Depends(get_conn)):
         w["price_as_of"] = mark["as_of"] if mark else None
         w["price_kind"] = _price_kind(mark["source"]) if mark else None
         t = w["upper_limit"]
-        w["pct_to_target"] = (
-            (t - w["price"]) / w["price"] * 100 if t is not None and w["price"] else None
-        )
+        pct = (t - w["price"]) / w["price"] * 100 if t is not None and w["price"] else None
+        # A price close to zero (or a huge limit stored before MAX_AMOUNT) overflows to infinity,
+        # which cannot be written as JSON: one such row would break the whole list.
+        w["pct_to_target"] = pct if pct is not None and math.isfinite(pct) else None
     return items
 
 
